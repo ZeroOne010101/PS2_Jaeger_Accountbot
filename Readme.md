@@ -26,7 +26,7 @@ Invite link and Instructions Coming Soon<sup>TM</sup>
 | !ping | Displays the Bot's latency. |
 | **Settings** | |
 | !utc_offset (set)<sup>1</sup> | Displays/Sets the utc offset used for the google sheet. |
-| !jaeger_url (set\|delete)<sup>1</sup> | Displays/Sets/Deletes the url the google sheet the bot will try to provision accounts from. |
+| !jaeger_url (set\|delete)<sup>1</sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
 | **Account Distribution** | |
 | !account | Displays the the name of the users currently provisioned account. |
 | !account book \| return | Book/Return an account if there are any available. |
