@@ -1,0 +1,18 @@
+{
+    "token": "YOUR_DISCORD_TOKEN",
+    "cogs": [
+        "cogs.admincommands",
+        "cogs.errorhandler",
+        "cogs.prefixes",
+        "cogs.jaegeraccounts",
+        "cogs.settings"
+    ],
+    "postgres": {
+        "pgHost": "POSTGRESQL_HOST",
+        "pgUser": "POSTGRESQL_USER",
+        "pgPassword": "POSTGRESQL_PASSWORD",
+        "pgDatabase": "PS2JaegerAccountbot"
+    },
+    "google_service_account": "data/YOUR_SERVICE_ACCOUNT_KEY.json",
+    "owner_id": YOUR_USER_ID(DEVELOPER_MODE)
+}

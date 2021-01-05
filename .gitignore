@@ -1,0 +1,6 @@
+**/__pycache__/**
+**/.vscode/**
+.git
+data/logfile.log
+data/settings.json
+ps2jaegeraccountbot*.json
