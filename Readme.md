@@ -1,6 +1,6 @@
 # PS2 Jaeger Accountbot
 ## About
-The bot is written in discord.py and is currently being developed in cooperation with the RITE Outfit.  
+The bot is written in discord.py and is currently being developed in cooperation with the RITE Outfit.
 Its primary purpose is the distribution of temporary accounts for the Jaeger Server of the MMOFPS Planetside 2.
 
 ## Running the Bot
