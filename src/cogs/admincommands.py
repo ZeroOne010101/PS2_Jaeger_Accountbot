@@ -10,14 +10,14 @@ class Admincommands(commands.Cog, command_attrs=dict(hidden=True)):
     @commands.command()
     async def close(self, ctx):
         """Closes connection to discord"""
-        await ctx.send("```Are you sure you want to close the bot? (y/n)```")
+        await ctx.reply("```Are you sure you want to close the bot? (y/n)```")
         confirmation = await self.bot.wait_for("message")
         if confirmation.content == "y":
             logging.info("The \"close\" command has been invoked.")
             await self.bot.close()
         else:
             logging.info("The \"close\" command has been aborted.")
-            await ctx.send("```The \"close\" command has been aborted.```")
+            await ctx.reply("```The \"close\" command has been aborted.```")
 
     @commands.is_owner()
     @commands.group(name='message', invoke_without_command=True)

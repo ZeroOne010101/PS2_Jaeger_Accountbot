@@ -72,7 +72,7 @@ async def on_ready():
 @bot.command()
 async def ping(ctx):
     """Reports the bots latency."""
-    await ctx.channel.send(f'Pong! :ping_pong:\n```The bot has {bot.latency}s latency.```')
+    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency}s latency.```')
 
 # Add guild to db if it gets invited
 @bot.event
@@ -100,10 +100,10 @@ async def load(ctx, *, module):
         bot.load_extension(f'cogs.{module}')
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
-        await ctx.send(f'{e.__class__.__name__}: {e}')
+        await ctx.reply(f'{e.__class__.__name__}: {e}')
     else:
         logging.info(f'module cogs.{module} was loaded successfully')
-        await ctx.send(':thumbsup:')
+        await ctx.reply(':thumbsup:')
 
 @commands.is_owner()
 @bot.command(hidden=True)
@@ -113,10 +113,10 @@ async def unload(ctx, *, module):
         bot.unload_extension(f'cogs.{module}')
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
-        await ctx.send(f'{e.__class__.__name__}: {e}')
+        await ctx.reply(f'{e.__class__.__name__}: {e}')
     else:
         logging.info(f'module cogs.{module} was unloaded successfully')
-        await ctx.send(':thumbsup:')
+        await ctx.reply(':thumbsup:')
 
 @commands.is_owner()
 @bot.command(hidden=True)
@@ -126,15 +126,15 @@ async def reload(ctx, *, module):
         bot.reload_extension(f'cogs.{module}')
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
-        await ctx.send(f'{e.__class__.__name__}: {e}')
+        await ctx.reply(f'{e.__class__.__name__}: {e}')
     else:
         logging.info(f'module cogs.{module} was reloaded successfully')
-        await ctx.send(':thumbsup:')
+        await ctx.reply(':thumbsup:')
 
 @commands.is_owner()
 @bot.command(hidden=True)
 async def loaded(ctx):
     """Reports all loded modules."""
-    await ctx.channel.send(f'```{bot.extensions}```')
+    await ctx.reply(f'```{bot.extensions}```')
 
 bot.run(shared_recources.botSettings['token'])

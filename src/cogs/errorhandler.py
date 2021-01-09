@@ -12,7 +12,7 @@ class Errorhandler(commands.Cog):
         logging.info(f"Ignoring exception {error.__class__.__name__} in command {ctx.command.name} with message: {error}")
         with open("data/logfile.log", "a") as logfile:
             traceback.print_tb(error.__traceback__, file=logfile)
-        await ctx.send(f"```Error: An unexpected error has occured in the command \"{ctx.command}\".\nPlease contact the Administrator.```")
+        await ctx.reply(f"```Error: An unexpected error has occured in the command \"{ctx.command}\".\nPlease contact the Administrator.```")
         raise error
 
     @commands.Cog.listener()
@@ -32,24 +32,24 @@ class Errorhandler(commands.Cog):
             return
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.send(f"```Error: {ctx.command} is currently disabled```")
+            await ctx.reply(f"```Error: {ctx.command} is currently disabled```")
 
         elif isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(f"```Error: Missing argument: {error.param}```")
+            await ctx.reply(f"```Error: Missing argument: {error.param}```")
 
         elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.send(f"```Error: {ctx.command} can not be used in private messages```")
+            await ctx.reply(f"```Error: {ctx.command} can not be used in private messages```")
 
         elif isinstance(error, commands.BadArgument):
-            await ctx.send(f"```{error}```")
+            await ctx.reply(f"```{error}```")
 
         elif isinstance(error, AccountsBaseException):
-            await ctx.send(f"```{error}```")
+            await ctx.reply(f"```{error}```")
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, gspread.exceptions.APIError):
                 if error.original.response.status_code == 403:
-                    await ctx.send("```Error: the bot does not have permission to access the sheet you have specified.```")
+                    await ctx.reply("```Error: the bot does not have permission to access the sheet you have specified.```")
                 else:
                     await self._log_trace_then_raise(ctx, error)
             else:

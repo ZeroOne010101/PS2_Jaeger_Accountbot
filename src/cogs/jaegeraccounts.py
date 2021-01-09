@@ -146,10 +146,10 @@ class AccountDistrubution(commands.Cog):
         account = await sheet_data.user_has_account()
 
         if account is not None:
-            await ctx.send(f"Your currently assigned account is: `{account.name}`.\n"
+            await ctx.reply(f"Your currently assigned account is: `{account.name}`.\n"
                             "Please check your PMs for the login details.")
         else:
-            await ctx.send(f"{ctx.author.mention}\nYou have not been assigned any accounts for today.\n"
+            await ctx.reply(f"{ctx.author.mention}\nYou have not been assigned any accounts for today.\n"
                             "Please use the `!account book` command or ask your OVO rep for account assignment.")
 
     @commands.guild_only()
@@ -173,7 +173,7 @@ class AccountDistrubution(commands.Cog):
             if account.last_user == name:
                 # It is more efficient to repeat a good part of the user_has_account function than to call it
                 if account.is_booked:
-                    await ctx.send(f"You have already been assigned: `{account.name}`.\n"
+                    await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
                     return
                 else:
@@ -190,7 +190,7 @@ class AccountDistrubution(commands.Cog):
                 return
 
         # If the function made it this far, there are no free accounts available
-        await ctx.author.send("````There are currently no free accounts.\nIf you need one urgently, talk to your OVO rep.```")
+        await ctx.author.send("```There are currently no free accounts.\nIf you need one urgently, talk to your OVO rep.```")
 
     @commands.guild_only()
     @commands.command()
@@ -318,7 +318,7 @@ class AccountDistrubution(commands.Cog):
 #                         last_booked = last_booked.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset))) # Makes datetime object timezone aware
 #                         break
 #                     except ValueError:
-#                         await ctx.send("```Error: There seems to be a date formatting error in the google sheets document.```")
+#                         await ctx.reply("```Error: There seems to be a date formatting error in the google sheets document.```")
 #                         raise NotImplementedError("TODO: Make custom errorhandler-compatible exception for invalid google-sheet values") #TODO: Make custom errorhandler-compatible exception for invalid google-sheet values to outsource this
 
 #             accounts.append(Account(name, password, last_user, last_booked))

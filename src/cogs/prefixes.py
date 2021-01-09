@@ -20,9 +20,9 @@ class Prefixes(commands.Cog):
                     for db_record in db_records:
                         prefix_str += f"{db_record['prefix']} "
             if prefix_str != "":
-                await ctx.send(f"```{prefix_str[:-1]}```")
+                await ctx.reply(f"```{prefix_str[:-1]}```")
             else:
-                await ctx.send("```No prefix set, default is ! or @ZeroBot```")
+                await ctx.reply("```No prefix set, default is ! or @ZeroBot```")
         except PostgresError as error:
             logging.error(f'{error.__class__.__name__}: {error}')
             raise error
@@ -42,7 +42,7 @@ class Prefixes(commands.Cog):
         except StringDataRightTruncationError as e:
             limit = e.message.replace("value too long for type character varying(", "")
             limit = limit.replace(")", "")
-            await ctx.send(f"```Error: this prefix exceeds the limit of {limit} characters```")
+            await ctx.reply(f"```Error: this prefix exceeds the limit of {limit} characters```")
         except PostgresError as error:
             logging.error(f'PostgresError: {error.__class__.__name__}: {error}')
             raise error

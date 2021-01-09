@@ -13,7 +13,7 @@ class Settings(commands.Cog):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-        await ctx.send(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
+        await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
 
     @commands.guild_only()
     @utc_offset.command(name="set")  # Collides with builtin set
@@ -38,7 +38,7 @@ class Settings(commands.Cog):
                 db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
                 if db_url is None:
                     db_url = "not set"
-        await ctx.send(f"The account url for this guild is currently `{db_url}`.")
+        await ctx.reply(f"The account url for this guild is currently `{db_url}`.")
 
     @commands.guild_only()
     @jaeger_url.command(name="set")  # Collides with builtin set
