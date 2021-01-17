@@ -1,11 +1,10 @@
 from discord.ext import commands
 import discord
-from .utils.shared_recources import dbPool, gspread_service_account
-import gspread
+from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union
-from .utils.errors import InvalidSheetsValue, NoSheetsUrlException
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException
 
 class Account:
     def __init__(self, name: str, password: str, last_user: Union[str, None], last_booked_from: Union[datetime.datetime, None], last_booked_to: Union[datetime.datetime, None]):
@@ -104,13 +103,12 @@ class SheetData:
 
     async def user_has_account(self):
         """Returns the users currently booked account or None"""
-        for account in self.accounts:
-            # Necessary because author.nick is None if the user has not changed his name on the server
-            if self.ctx.author.nick is not None:
-                name = self.ctx.author.nick
-            else:
-                name = self.ctx.author.name
+        # Necessary because author.nick is None if the user has not changed his name on the server
+        name = self.ctx.author.name
+        if self.ctx.author.nick is not None:
+            name = self.ctx.author.nick
 
+        for account in self.accounts:
             if account.last_user == name:
                 if account.is_booked:
                     return account
@@ -162,23 +160,18 @@ class AccountDistrubution(commands.Cog):
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
 
+        # Necessary because author.nick is None if the user has not changed his name on the server      
+        name = ctx.author.name
+        if ctx.author.nick is not None:
+            name = ctx.author.nick
+
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
-            # Necessary because author.nick is None if the user has not changed his name on the server
-            if ctx.author.nick is not None:
-                name = ctx.author.nick
-            else:
-                name = ctx.author.name
-
-            if account.last_user == name:
-                # It is more efficient to repeat a good part of the user_has_account function than to call it
-                if account.is_booked:
-                    await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
+            if account.last_user == name and account.is_booked:
+                await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
-                    return
-                else:
-                    await ctx.author.send(embed=account.embed)
-                    return
+                return
+
 
         # TODO actually enter this into the google sheet
         # If the user does not have any prior accounts, assign the first free one
@@ -209,6 +202,7 @@ class AccountDistrubution(commands.Cog):
 
         if len(accounts) >= len(ctx.message.mentions):
             for member in ctx.message.mentions:
+                # Making sure account usage is evenly spread
                 random.shuffle(accounts)
                 account = accounts.pop()
                 await member.send(str(account))
