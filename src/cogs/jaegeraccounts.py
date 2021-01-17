@@ -32,7 +32,7 @@ class Account:
 
     @property
     def is_booked(self):
-        if self.last_booked_to:
+        if self.last_booked_to and self.last_booked_to < datetime.datetime.now(tz=self.last_booked_to.tzinfo):
             return False
         else:
             return True
@@ -57,6 +57,7 @@ class SheetData:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", self.ctx.guild.id)
 
         accounts = []
+        print(self.raw_data)
 
         for row in self.raw_data[1:]:
             name, password = row[0:2]
@@ -78,15 +79,14 @@ class SheetData:
                         from_datetime_str = date_str + "_" + from_time_str
 
                         try:
-                            last_booked_from = datetime.datetime.strptime(from_datetime_str, "%-m/%-d/%Y_%-I:%M%p")
+                            last_booked_from = datetime.datetime.strptime(from_datetime_str, '%m/%d/%Y_%I:%M%p')
                             last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
                             last_booked_to = None
                             if to_time_str:
                                 to_datetime_str = date_str + "_" + to_time_str
-                                last_booked_to = datetime.datetime.strptime(to_datetime_str, "%-m/%-d/%Y_%-I:%M%p")
+                                last_booked_to = datetime.datetime.strptime(to_datetime_str, "%m/%d/%Y_%I:%M%p")
                                 last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
-
                                 # Handle booking across days
                                 if last_booked_from > last_booked_to:
                                     last_booked_to += datetime.timedelta(hours=24)
@@ -98,7 +98,7 @@ class SheetData:
                     last_booked_from = None
                     last_booked_to = None
 
-                accounts.append(Account(name, password, last_user, last_booked_from, last_booked_to))
+            accounts.append(Account(name, password, last_user, last_booked_from, last_booked_to))
         return accounts
 
     async def user_has_account(self):
@@ -179,6 +179,7 @@ class AccountDistrubution(commands.Cog):
             if account.is_booked:
                 continue
             else:
+                # Here need to write to datasheet
                 await ctx.author.send(embed=account.embed)
                 return
 
