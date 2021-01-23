@@ -139,14 +139,13 @@ class AccountDistrubution(commands.Cog):
             raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
-        print(sheet_data.accounts)  # BUG accounts are dublicate in list
         account = await sheet_data.user_has_account()
 
         if account is not None:
             await ctx.reply(f"Your currently assigned account is: `{account.name}`.\n"
                             "Please check your PMs for the login details.")
         else:
-            await ctx.reply(f"{ctx.author.mention}\nYou have not been assigned any accounts for today.\n"
+            await ctx.reply("You have not been assigned any accounts for today.\n"
                             "Please use the `!account book` command or ask your OVO rep for account assignment.")
 
     @commands.guild_only()
@@ -159,7 +158,7 @@ class AccountDistrubution(commands.Cog):
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
 
-        # Necessary because author.nick is None if the user has not changed his name on the server      
+        # Necessary because author.nick is None if the user has not changed his name on the server
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
