@@ -27,11 +27,15 @@ Invite link and Instructions Coming Soon<sup>TM</sup>
 | **Settings** | |
 | !utc_offset (set)<sup>1</sup> | Displays/Sets the utc offset used for the google sheet. |
 | !jaeger_url (set\|delete)<sup>1</sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
+| !outfit_name (set\|delete)<sup>1</sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
 | **Account Distribution** | |
 | !account | Displays the the name of the users currently provisioned account. |
 | !account book \| return | Book/Return an account if there are any available. |
 | !account (force)distribute \<mentions><sup>1</sup>| Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
+| **Parity Check** | |
+| !paritycheck | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
 
 ## Special Thanks
 
 To Asorr for providing the resources neccesary to host the bot instance.
+To TheJerry for helping me code this bot.
