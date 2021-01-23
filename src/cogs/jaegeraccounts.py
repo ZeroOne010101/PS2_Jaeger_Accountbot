@@ -78,13 +78,13 @@ class SheetData:
                         from_datetime_str = date_str + "_" + from_time_str
 
                         try:
-                            last_booked_from = datetime.datetime.strptime(from_datetime_str, '%m/%d/%Y_%I:%M%p')
+                            last_booked_from = datetime.datetime.strptime(from_datetime_str, "%m/%d/%Y_%I:%M%p")  # BUG Figure out why the old format didnt work in windows and revert if possible
                             last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
                             last_booked_to = None
                             if to_time_str:
                                 to_datetime_str = date_str + "_" + to_time_str
-                                last_booked_to = datetime.datetime.strptime(to_datetime_str, "%m/%d/%Y_%I:%M%p")
+                                last_booked_to = datetime.datetime.strptime(to_datetime_str, "%m/%d/%Y_%I:%M%p")  # BUG Figure out why the old format didnt work in windows and revert if possible
                                 last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
                                 # Handle booking across days
                                 if last_booked_from > last_booked_to:
@@ -169,7 +169,6 @@ class AccountDistrubution(commands.Cog):
             if account.last_user == name and account.is_booked:
                 await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
-                return
                 return
             else:
                 await ctx.author.send(embed=account.embed)
