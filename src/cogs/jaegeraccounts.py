@@ -70,8 +70,12 @@ class SheetData:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", self.ctx.guild.id)
 
         accounts = []
+<<<<<<< HEAD
         # This is for writing to sheet later. Don't need to iterate over accounts again, if just save row index of account
         account_row = 2
+=======
+
+>>>>>>> 18dc208697697b442ef2cf1482ad7d52e95ac84a
         for row in self.raw_data[1:]:
             name, password = row[0:2]
 
