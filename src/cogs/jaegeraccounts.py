@@ -5,14 +5,17 @@ import datetime
 import re
 from typing import Union
 from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException
+import logging
+
 
 class Account:
-    def __init__(self, name: str, password: str, last_user: Union[str, None], last_booked_from: Union[datetime.datetime, None], last_booked_to: Union[datetime.datetime, None]):
+    def __init__(self, name: str, password: str, last_user: Union[str, None], last_booked_from: Union[datetime.datetime, None], last_booked_to: Union[datetime.datetime, None], account_row: Union[int, None]):
         self.name = name
         self.password = password
         self.last_user = last_user
         self.last_booked_from = last_booked_from
         self.last_booked_to = last_booked_to
+        self.account_row = account_row
 
     def __repr__(self):
         return f"<Account Name: {self.name}, PW: {self.password}, last_user: {self.last_user}, last_boked_from: {self.last_booked_from}, last booked_to: {self.last_booked_to}>"
@@ -26,16 +29,18 @@ class Account:
         embed = discord.Embed(title="Account Assignment")
         embed.add_field(name="Account", value=self.name, inline=True)
         embed.add_field(name="Password", value=self.password, inline=True)
-        embed.add_field(name="Terms of Service", value=terms_of_service, inline=False)
+        embed.add_field(name="Terms of Service",
+                        value=terms_of_service, inline=False)
 
         return embed
 
     @property
     def is_booked(self):
-        if self.last_booked_to and self.last_booked_to < datetime.datetime.now(tz=self.last_booked_to.tzinfo):
-            return False
-        else:
+        if self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo):
             return True
+        else:
+            return False
+
 
 class SheetData:
     def __init__(self):
@@ -50,6 +55,14 @@ class SheetData:
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
+    def _write_sheet_data(self, url: str, row: int, col: int, data: str):
+        """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
+        
+        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
+        update_info = sheet.update_cell(row, col, data)
+        logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
+        return
+
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
 
@@ -57,8 +70,8 @@ class SheetData:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", self.ctx.guild.id)
 
         accounts = []
-        print(self.raw_data)
-
+        # This is for writing to sheet later. Don't need to iterate over accounts again, if just save row index of account
+        account_row = 2
         for row in self.raw_data[1:]:
             name, password = row[0:2]
 
@@ -67,38 +80,48 @@ class SheetData:
             for index, entry in reversed(list(indexed_row)):
                 if index > 1:
                     if entry != "":
-                        match = re.match(r"(.+)\((\d?\d:\d\d[AP]M)(?:-(\d?\d:\d\d[AP]M))?\)", entry)
+                        match = re.match(
+                            r"(.+)\((\d?\d:\d\d[AP]M)(?:-(\d?\d:\d\d[AP]M))?\)", entry)
                         if match:
                             last_user = match.group(1)
                             from_time_str = match.group(2)
                             to_time_str = match.group(3)
                         else:
-                            raise InvalidSheetsValue("There seems to be a time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue(
+                                "There seems to be a time (username) formatting error in the google sheets document.")
 
                         date_str = self.raw_data[:1][0][index]
                         from_datetime_str = date_str + "_" + from_time_str
 
                         try:
-                            last_booked_from = datetime.datetime.strptime(from_datetime_str, '%m/%d/%Y_%I:%M%p')
-                            last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
+                            last_booked_from = datetime.datetime.strptime(
+                                from_datetime_str, '%m/%d/%Y_%I:%M%p')
+                            last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(
+                                datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
                             last_booked_to = None
                             if to_time_str:
                                 to_datetime_str = date_str + "_" + to_time_str
-                                last_booked_to = datetime.datetime.strptime(to_datetime_str, "%m/%d/%Y_%I:%M%p")
-                                last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
+                                last_booked_to = datetime.datetime.strptime(
+                                    to_datetime_str, "%m/%d/%Y_%I:%M%p")
+                                last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(
+                                    datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
                                 # Handle booking across days
                                 if last_booked_from > last_booked_to:
-                                    last_booked_to += datetime.timedelta(hours=24)
+                                    last_booked_to += datetime.timedelta(
+                                        hours=24)
                             break
                         except ValueError:
-                            raise InvalidSheetsValue("There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue(
+                                "There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
                 else:
                     last_user = None
                     last_booked_from = None
                     last_booked_to = None
 
-            accounts.append(Account(name, password, last_user, last_booked_from, last_booked_to))
+            accounts.append(Account(name, password, last_user,
+                                    last_booked_from, last_booked_to, account_row))
+            account_row += 1
         return accounts
 
     async def user_has_account(self):
@@ -123,6 +146,61 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
+    async def insert_booking(self, bot: commands.Bot, ctx: commands.Context, url: str, account: Account):
+        # Will need to compare dates
+        async with dbPool.acquire() as conn:
+            utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
+        
+        raw_dates = self.raw_data[0]
+        indexed_dates = enumerate(raw_dates)
+        last_date = None
+        last_index = len(raw_dates) - 1
+        for index, date in reversed(list(indexed_dates)):
+            try:
+                last_date = datetime.datetime.strptime(date, "%m/%d/%Y")
+                last_index = index
+                break
+            except ValueError:
+                print(f"`{date}` could not be parsed")
+        # TODO Will need to figure out what to do in case if no dates could be found
+
+        # Compare last date, so can write to same column
+        now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=utcoffset)))
+        today = now.date()
+
+        create_new_column = False
+        # If last date in sheet is before today, create new row
+        if today > last_date.date():
+            last_date = today
+            last_index = len(raw_dates) + 1
+            create_new_column = True
+        # if last day in sheet is today, but account was already booked for today, create new date column
+        elif account.last_booked_to and account.last_booked_to.date() == today:
+            last_date = today
+            last_index = len(raw_dates) + 1
+            create_new_column = True
+        
+        # Add new date column if needed
+        if create_new_column:
+            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
+
+        # Prepare data to write
+        # TODO later will allow to book for more than 1 hour, need to figure out how
+        # TODO figure out case when account booked for today and tmr
+
+        name = ctx.author.name
+        if ctx.author.nick is not None:
+            name = ctx.author.nick
+
+        
+        hrs_now = now.strftime("%I:%M%p")
+        hrs_after_x = (now + datetime.timedelta(hours=1)).strftime("%I:%M%p")
+        write_data = f"{name}({hrs_now}-{hrs_after_x})"
+        write_row = account.account_row
+        write_col = last_index
+
+        await bot.loop.run_in_executor(None, self._write_sheet_data, url, write_row, write_col, write_data)
+        print(last_date, last_index)
 
 class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
@@ -137,10 +215,10 @@ class AccountDistrubution(commands.Cog):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException(
+                "There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
-        print(sheet_data.accounts)  # BUG accounts are dublicate in list
         account = await sheet_data.user_has_account()
 
         if account is not None:
@@ -156,11 +234,12 @@ class AccountDistrubution(commands.Cog):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException(
+                "There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
 
-        # Necessary because author.nick is None if the user has not changed his name on the server      
+        # Necessary because author.nick is None if the user has not changed his name on the server
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
@@ -168,10 +247,13 @@ class AccountDistrubution(commands.Cog):
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
             if account.last_user == name and account.is_booked:
-                await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
+                if account.is_booked:
+                    await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
-                return
-
+                    return
+                else:
+                    await ctx.author.send(embed=account.embed)
+                    return
 
         # TODO actually enter this into the google sheet
         # If the user does not have any prior accounts, assign the first free one
@@ -179,7 +261,7 @@ class AccountDistrubution(commands.Cog):
             if account.is_booked:
                 continue
             else:
-                # Here need to write to datasheet
+                await sheet_data.insert_booking(self.bot, ctx, url, account)
                 await ctx.author.send(embed=account.embed)
                 return
 
@@ -211,25 +293,6 @@ class AccountDistrubution(commands.Cog):
 
         else:
             raise NotImplementedError("MAKE OWN EXCEPTION HERE")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # from discord.ext import commands
@@ -422,25 +485,8 @@ class AccountDistrubution(commands.Cog):
 #             raise NotImplementedError("MAKE OWN EXCEPTION HERE")
 
 
-
 def setup(bot):
     bot.add_cog(AccountDistrubution(bot))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 """

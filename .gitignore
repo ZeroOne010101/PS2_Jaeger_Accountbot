@@ -3,4 +3,5 @@
 .git
 data/logfile.log
 data/settings.json
+data/db_bckup
 ps2jaegeraccountbot*.json
