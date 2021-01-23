@@ -51,7 +51,7 @@ class SheetData:
     def _get_sheet_data(self, url: str):
         """Fetches all relevant data from the spreadsheet"""
 
-        sheet1 = gspread_service_account.open_by_url(url).sheet1
+        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(0)
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
@@ -161,8 +161,7 @@ class SheetData:
                 last_index = index
                 break
             except ValueError:
-                print(f"`{date}` could not be parsed")
-        # TODO Will need to figure out what to do in case if no dates could be found
+                logging.info(f"`{date}` could not be parsed when when inserting booking")
 
         # Compare last date, so can write to same column
         now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=utcoffset)))
@@ -170,7 +169,7 @@ class SheetData:
 
         create_new_column = False
         # If last date in sheet is before today, create new row
-        if today > last_date.date():
+        if last_date is None or today > last_date.date():
             last_date = today
             last_index = len(raw_dates) + 1
             create_new_column = True
@@ -200,7 +199,6 @@ class SheetData:
         write_col = last_index
 
         await bot.loop.run_in_executor(None, self._write_sheet_data, url, write_row, write_col, write_data)
-        print(last_date, last_index)
 
 class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
@@ -256,7 +254,6 @@ class AccountDistrubution(commands.Cog):
                     await ctx.author.send(embed=account.embed)
                     return
 
-        # TODO actually enter this into the google sheet
         # If the user does not have any prior accounts, assign the first free one
         for account in sheet_data.accounts:
             if account.is_booked:
