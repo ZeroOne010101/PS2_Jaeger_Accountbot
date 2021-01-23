@@ -1,7 +1,7 @@
 from discord.ext import commands
 
 class AccountsBaseException(commands.CommandError):
-    """Base exception for all exceptions in this Cog"""
+    """Base exception for all exceptions in thie jaegeraccounts Cog"""
     pass
 
 class NoSheetsUrlException(AccountsBaseException):
@@ -10,4 +10,16 @@ class NoSheetsUrlException(AccountsBaseException):
 
 class InvalidSheetsValue(AccountsBaseException):
     """Exception to be raised when the formatting of the sheets document is nonstandard"""
+    pass
+
+class ParityBaseException(commands.CommandError):
+    """Base exception for all exceptions in the paritycheck Cog"""
+    pass
+
+class NoOutfitNameError(ParityBaseException):
+    """Exception to be raised when the guild has not set an outfit name"""
+    pass
+
+class InvalidOutfitNameError(ParityBaseException):
+    """Exception to be raised when the guild has not set an outfit name"""
     pass

@@ -1,7 +1,7 @@
 from discord.ext import commands
 import logging
 import traceback
-from .utils.errors import AccountsBaseException
+from .utils.errors import AccountsBaseException, ParityBaseException
 import gspread
 
 class Errorhandler(commands.Cog):
@@ -40,10 +40,16 @@ class Errorhandler(commands.Cog):
         elif isinstance(error, commands.NoPrivateMessage):
             await ctx.reply(f"```Error: {ctx.command} can not be used in private messages```")
 
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.reply(f"```{error}```")
+
         elif isinstance(error, commands.BadArgument):
             await ctx.reply(f"```{error}```")
 
         elif isinstance(error, AccountsBaseException):
+            await ctx.reply(f"```{error}```")
+
+        elif isinstance(error, ParityBaseException):
             await ctx.reply(f"```{error}```")
 
         elif isinstance(error, commands.CommandInvokeError):

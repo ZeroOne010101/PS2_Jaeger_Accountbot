@@ -34,10 +34,9 @@ class Settings(commands.Cog):
     @commands.group(invoke_without_command=True, aliases=["jaegerurl"])
     async def jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
-            async with conn.transaction():
-                db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
-                if db_url is None:
-                    db_url = "not set"
+            db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+            if db_url is None:
+                db_url = "not set"
         await ctx.reply(f"The account url for this guild is currently `{db_url}`.")
 
     @commands.guild_only()
@@ -56,11 +55,34 @@ class Settings(commands.Cog):
             raise commands.BadArgument("Error: The Spreadsheet that you have specified could not be found")
 
     @commands.guild_only()
-    @jaeger_url.command()
-    async def delete(self, ctx):
+    @jaeger_url.command(name="delete")
+    async def delete_jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("DELETE FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+
+    @commands.guild_only()
+    @commands.group(invoke_without_command=True, aliases=["outfitname"])
+    async def outfit_name(self, ctx):
+        async with dbPool.acquire() as conn:
+            outfit_name = await conn.fetchval("SELECT outfit_name FROM guilds WHERE guild_id = $1;", ctx.guild.id)
+            if outfit_name is None:
+                outfit_name = "not set"
+        await ctx.reply(f"The outfit name for this guild is currently `{outfit_name}`.")
+
+    @commands.guild_only()
+    @outfit_name.command(name="set")  # Collides with builtin set
+    async def set_outfit_name(self, ctx, *, outfit_name):
+        async with dbPool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", outfit_name, ctx.guild.id)
+
+    @commands.guild_only()
+    @outfit_name.command(name="delete")
+    async def delete_outfit_name(self, ctx):
+        async with dbPool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", None, ctx.guild.id)
 
 def setup(bot):
     bot.add_cog(Settings(bot))
