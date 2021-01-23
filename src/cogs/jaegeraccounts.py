@@ -95,7 +95,7 @@ class SheetData:
 
                         try:
                             last_booked_from = datetime.datetime.strptime(
-                                from_datetime_str, '%m/%d/%Y_%I:%M%p')
+                                from_datetime_str, '%-m/%-d/%Y_%-I:%-M%p')
                             last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(
                                 datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
@@ -103,7 +103,7 @@ class SheetData:
                             if to_time_str:
                                 to_datetime_str = date_str + "_" + to_time_str
                                 last_booked_to = datetime.datetime.strptime(
-                                    to_datetime_str, "%m/%d/%Y_%I:%M%p")
+                                    to_datetime_str, "%-m/%-d/%Y_%-I:%-M%p")
                                 last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(
                                     datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
                                 # Handle booking across days
@@ -181,7 +181,7 @@ class SheetData:
         
         # Add new date column if needed
         if create_new_column:
-            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
+            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%-m/%-d/%Y"))
 
         # Prepare data to write
         # TODO later will allow to book for more than 1 hour, need to figure out how
@@ -191,9 +191,8 @@ class SheetData:
         if ctx.author.nick is not None:
             name = ctx.author.nick
 
-        
-        hrs_now = now.strftime("%I:%M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=1)).strftime("%I:%M%p")
+        hrs_now = now.strftime("%-I:%-M%p")
+        hrs_after_x = (now + datetime.timedelta(hours=1)).strftime("%-I:%-M%p")
         write_data = f"{name}({hrs_now}-{hrs_after_x})"
         write_row = account.account_row
         write_col = last_index
