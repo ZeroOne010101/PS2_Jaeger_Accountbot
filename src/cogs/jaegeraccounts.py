@@ -51,14 +51,14 @@ class SheetData:
     def _get_sheet_data(self, url: str):
         """Fetches all relevant data from the spreadsheet"""
 
-        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(0)
+        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(1)
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
     def _write_sheet_data(self, url: str, row: int, col: int, data: str):
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
 
-        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
+        sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
         return
@@ -146,7 +146,7 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def insert_booking(self, bot: commands.Bot, ctx: commands.Context, url: str, account: Account):
+    async def insert_booking(self, bot: commands.Bot, ctx: commands.Context, url: str, account: Account, book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -154,11 +154,11 @@ class SheetData:
         raw_dates = self.raw_data[0]
         indexed_dates = enumerate(raw_dates)
         last_date = None
-        last_index = len(raw_dates) - 1
+        last_index = len(raw_dates)
         for index, date in reversed(list(indexed_dates)):
             try:
                 last_date = datetime.datetime.strptime(date, "%m/%d/%Y")
-                last_index = index
+                last_index = index + 1
                 break
             except ValueError:
                 logging.info(f"`{date}` could not be parsed when when inserting booking")
@@ -181,7 +181,7 @@ class SheetData:
         
         # Add new date column if needed
         if create_new_column:
-            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%-m/%-d/%Y"))
+            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
         # TODO later will allow to book for more than 1 hour, need to figure out how
@@ -192,7 +192,7 @@ class SheetData:
             name = ctx.author.nick
 
         hrs_now = now.strftime("%-I:%-M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=1)).strftime("%-I:%-M%p")
+        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")
         write_data = f"{name}({hrs_now}-{hrs_after_x})"
         write_row = account.account_row
         write_col = last_index
@@ -227,7 +227,7 @@ class AccountDistrubution(commands.Cog):
 
     @commands.guild_only()
     @account.command()
-    async def book(self, ctx):
+    async def book(self, ctx, *, args):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -241,6 +241,12 @@ class AccountDistrubution(commands.Cog):
         if ctx.author.nick is not None:
             name = ctx.author.nick
 
+        book_duration = 1
+        for arg in args.split(' '):
+            if arg.isnumeric() and int(arg) > 0:
+                book_duration = int(arg)
+
+
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
             if account.last_user == name:
@@ -249,7 +255,7 @@ class AccountDistrubution(commands.Cog):
                                     "Please check your PMs for the login details.")
                     return
                 else:
-                    await sheet_data.insert_booking(self.bot, ctx, url, account)
+                    await sheet_data.insert_booking(self.bot, ctx, url, account, book_duration)
                     await ctx.author.send(embed=account.embed)
                     return
 
@@ -258,7 +264,7 @@ class AccountDistrubution(commands.Cog):
             if account.is_booked:
                 continue
             else:
-                await sheet_data.insert_booking(self.bot, ctx, url, account)
+                await sheet_data.insert_booking(self.bot, ctx, url, account, book_duration)
                 await ctx.author.send(embed=account.embed)
                 return
 
