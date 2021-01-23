@@ -167,7 +167,7 @@ class AccountDistrubution(commands.Cog):
         for account in sheet_data.accounts:
             if account.last_user == name and account.is_booked:
                 await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
-                                    "Please check your PMs for the login details.")
+                                "Please check your PMs for the login details.")
                 return
             else:
                 await ctx.author.send(embed=account.embed)
