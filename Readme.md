@@ -38,4 +38,5 @@ Invite link and Instructions Coming Soon<sup>TM</sup>
 ## Special Thanks
 
 To Asorr for providing the resources neccesary to host the bot instance.
+
 To TheJerry for helping me code this bot.
