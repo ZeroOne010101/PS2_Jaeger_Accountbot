@@ -170,7 +170,10 @@ class AccountDistrubution(commands.Cog):
                 await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
                 return
-
+                return
+            else:
+                await ctx.author.send(embed=account.embed)
+                return
 
         # TODO actually enter this into the google sheet
         # If the user does not have any prior accounts, assign the first free one
