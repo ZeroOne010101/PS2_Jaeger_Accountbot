@@ -57,7 +57,7 @@ class SheetData:
 
     def _write_sheet_data(self, url: str, row: int, col: int, data: str):
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
-        
+
         sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
@@ -246,12 +246,13 @@ class AccountDistrubution(commands.Cog):
 
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
-            if account.last_user == name and account.is_booked:
+            if account.last_user == name:
                 if account.is_booked:
                     await ctx.reply(f"You have already been assigned: `{account.name}`.\n"
                                     "Please check your PMs for the login details.")
                     return
                 else:
+                    await sheet_data.insert_booking(self.bot, ctx, url, account)
                     await ctx.author.send(embed=account.embed)
                     return
 
