@@ -57,7 +57,6 @@ class SheetData:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", self.ctx.guild.id)
 
         accounts = []
-        print(self.raw_data)
 
         for row in self.raw_data[1:]:
             name, password = row[0:2]
