@@ -1,4 +1,4 @@
-name: Test by Linting
+name: build
 
 on:
   push:
