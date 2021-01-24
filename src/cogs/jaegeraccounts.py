@@ -222,7 +222,7 @@ class AccountDistrubution(commands.Cog):
             await ctx.reply(f"Your currently assigned account is: `{account.name}`.\n"
                             "Please check your PMs for the login details.")
         else:
-            await ctx.reply(f"{ctx.author.mention}\nYou have not been assigned any accounts for today.\n"
+            await ctx.reply("You have not been assigned any accounts for today.\n"
                             "Please use the `!account book` command or ask your OVO rep for account assignment.")
 
     @commands.guild_only()
