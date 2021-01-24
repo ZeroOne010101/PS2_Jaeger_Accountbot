@@ -95,7 +95,7 @@ class SheetData:
 
                         try:
                             last_booked_from = datetime.datetime.strptime(
-                                from_datetime_str, '%-m/%-d/%Y_%-I:%-M%p')
+                                from_datetime_str, "%-m/%-d/%Y_%-I:%-M%p")
                             last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(
                                 datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
@@ -227,7 +227,7 @@ class AccountDistrubution(commands.Cog):
 
     @commands.guild_only()
     @account.command()
-    async def book(self, ctx, *, args):
+    async def book(self, ctx, duration='1'):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -242,9 +242,8 @@ class AccountDistrubution(commands.Cog):
             name = ctx.author.nick
 
         book_duration = 1
-        for arg in args.split(' '):
-            if arg.isnumeric() and int(arg) > 0:
-                book_duration = int(arg)
+        if duration.isnumeric() and int(duration) > 0:
+            book_duration = int(duration)
 
 
         # Try to assign accounts to the person that last had it as often as possible.
