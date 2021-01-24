@@ -4,9 +4,11 @@ from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
 
+# Allow to book acounts for 12 hours max
+BOOKING_DURATION_LIMIT = 12
 
 class Account:
     def __init__(self, name: str, password: str, last_user: Union[str, None], last_booked_from: Union[datetime.datetime, None], last_booked_to: Union[datetime.datetime, None], account_row: Union[int, None]):
@@ -228,6 +230,13 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @account.command()
     async def book(self, ctx, duration='1'):
+
+        book_duration = 1
+        if duration.isnumeric() and int(duration) > 0:
+            book_duration = int(duration)
+            if book_duration > BOOKING_DURATION_LIMIT:
+                raise BookingDurationLimitExceededError(f"Can not book a account for longer than 12 hours. ({duration} > 12 By the way :stuck_out_tongue_winking_eye:)")
+
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -240,11 +249,6 @@ class AccountDistrubution(commands.Cog):
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
-
-        book_duration = 1
-        if duration.isnumeric() and int(duration) > 0:
-            book_duration = int(duration)
-
 
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
