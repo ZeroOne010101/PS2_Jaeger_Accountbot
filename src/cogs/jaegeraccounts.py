@@ -313,7 +313,7 @@ class AccountDistrubution(commands.Cog):
                 account = available_accounts.pop()
                 name = member.nick if member.nick is not None else member.name
                 user_account_mapping[name] = account
-                await member.send(str(account))
+                await member.send(embed=account.embed)
                 await ctx.author.send(f"Member {member.nick} has been assigned account {account.name}.")
             await sheet_data.insert_bookings(self.bot, ctx, url, user_account_mapping, 1)
         else:
