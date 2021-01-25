@@ -6,6 +6,7 @@ import re
 from typing import Union
 from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
+import random
 
 # Allow to book acounts for 12 hours max
 BOOKING_DURATION_LIMIT = 12
@@ -148,7 +149,7 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def insert_booking(self, bot: commands.Bot, ctx: commands.Context, url: str, account: Account, book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, user_account_mapping_dct: dict([(str, Account)]), book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -169,6 +170,17 @@ class SheetData:
         now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=utcoffset)))
         today = now.date()
 
+        last_account_booked_date = None
+        for key, val in user_account_mapping_dct.items():
+            if val.last_booked_to is None:
+                continue
+            if last_account_booked_date is None:
+                last_account_booked_date = val.last_booked_to.date()
+                continue
+
+            if val.last_booked_to.date() > last_account_booked_date:
+                last_account_booked_date = val.last_booked_to.date()
+
         create_new_column = False
         # If last date in sheet is before today, create new row
         if last_date is None or today > last_date.date():
@@ -176,7 +188,7 @@ class SheetData:
             last_index = len(raw_dates) + 1
             create_new_column = True
         # if last day in sheet is today, but account was already booked for today, create new date column
-        elif account.last_booked_to and account.last_booked_to.date() == today:
+        elif last_account_booked_date and last_account_booked_date == today:
             last_date = today
             last_index = len(raw_dates) + 1
             create_new_column = True
@@ -186,20 +198,15 @@ class SheetData:
             await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
-        # TODO later will allow to book for more than 1 hour, need to figure out how
-        # TODO figure out case when account booked for today and tmr
-
-        name = ctx.author.name
-        if ctx.author.nick is not None:
-            name = ctx.author.nick
-
         hrs_now = now.strftime("%-I:%-M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")
-        write_data = f"{name}({hrs_now}-{hrs_after_x})"
-        write_row = account.account_row
-        write_col = last_index
+        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")        
 
-        await bot.loop.run_in_executor(None, self._write_sheet_data, url, write_row, write_col, write_data)
+        for name, account in user_account_mapping_dct.items():
+            write_data = f"{name}({hrs_now}-{hrs_after_x})"
+            write_row = account.account_row
+            write_col = last_index
+
+            await bot.loop.run_in_executor(None, self._write_sheet_data, url, write_row, write_col, write_data)
 
 class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
@@ -249,7 +256,7 @@ class AccountDistrubution(commands.Cog):
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
-
+        
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
             if account.last_user == name:
@@ -258,7 +265,9 @@ class AccountDistrubution(commands.Cog):
                                     "Please check your PMs for the login details.")
                     return
                 else:
-                    await sheet_data.insert_booking(self.bot, ctx, url, account, book_duration)
+                    assignment_dct = {}
+                    assignment_dct[name] = account
+                    await sheet_data.insert_bookings(self.bot, ctx, url, dict([(name, account)]), book_duration)
                     await ctx.author.send(embed=account.embed)
                     return
 
@@ -267,7 +276,7 @@ class AccountDistrubution(commands.Cog):
             if account.is_booked:
                 continue
             else:
-                await sheet_data.insert_booking(self.bot, ctx, url, account, book_duration)
+                await sheet_data.insert_bookings(self.bot, ctx, url, dict([(name, account)]), book_duration)
                 await ctx.author.send(embed=account.embed)
                 return
 
