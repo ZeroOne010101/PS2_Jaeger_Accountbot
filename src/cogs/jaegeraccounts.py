@@ -285,7 +285,7 @@ class AccountDistrubution(commands.Cog):
 
     @commands.guild_only()
     @commands.command()
-    async def distribute_accounts(self, ctx: commands.Context):
+    async def distribute_accounts(self, ctx: commands.Context, force="False"):
         """
         Distributes accounts to all mentioned users.
 
@@ -293,19 +293,29 @@ class AccountDistrubution(commands.Cog):
         force       Distributes accounts regardless of prior allocation
         """
         async with dbPool.acquire() as conn:
-            async with conn.transaction():
-                url = await conn.fetch('SELECT url FROM jaeger_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);', ctx.guild.id)
+            url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+        if url is None:
+            raise NoSheetsUrlException(
+                "There is no google sheets url associated with this guild.")
 
-        accounts = await self._get_accounts(url)
+        sheet_data = await SheetData.from_url(self.bot, ctx, url)
+        available_accounts = []
+        for account in sheet_data.accounts:
+            if force == "force" or not account.is_booked:
+                available_accounts.append(account)
 
-        if len(accounts) >= len(ctx.message.mentions):
+
+        if len(available_accounts) >= len(ctx.message.mentions):
+            user_account_mapping = {}
             for member in ctx.message.mentions:
                 # Making sure account usage is evenly spread
-                random.shuffle(accounts)
-                account = accounts.pop()
+                random.shuffle(available_accounts)
+                account = available_accounts.pop()
+                name = member.nick if member.nick is not None else member.name
+                user_account_mapping[name] = account
                 await member.send(str(account))
                 await ctx.author.send(f"Member {member.nick} has been assigned account {account.name}.")
-
+            await sheet_data.insert_bookings(self.bot, ctx, url, user_account_mapping, 1)
         else:
             raise NotImplementedError("MAKE OWN EXCEPTION HERE")
 
