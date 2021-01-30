@@ -149,7 +149,7 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, user_account_mapping_dct: dict([(str, Account)]), book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: list([Account]), book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -171,15 +171,15 @@ class SheetData:
         today = now.date()
 
         last_account_booked_date = None
-        for key, val in user_account_mapping_dct.items():
-            if val.last_booked_to is None:
+        for account in accounts_to_write:
+            if account.last_booked_to is None:
                 continue
             if last_account_booked_date is None:
-                last_account_booked_date = val.last_booked_to.date()
+                last_account_booked_date = account.last_booked_to.date()
                 continue
 
-            if val.last_booked_to.date() > last_account_booked_date:
-                last_account_booked_date = val.last_booked_to.date()
+            if account.last_booked_to.date() > last_account_booked_date:
+                last_account_booked_date = account.last_booked_to.date()
 
         create_new_column = False
         # If last date in sheet is before today, create new row
@@ -201,8 +201,8 @@ class SheetData:
         hrs_now = now.strftime("%-I:%-M%p")
         hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")        
 
-        for name, account in user_account_mapping_dct.items():
-            write_data = f"{name}({hrs_now}-{hrs_after_x})"
+        for account in accounts_to_write:
+            write_data = f"{account.last_user}({hrs_now}-{hrs_after_x})"
             write_row = account.account_row
             write_col = last_index
 
@@ -265,9 +265,7 @@ class AccountDistrubution(commands.Cog):
                                     "Please check your PMs for the login details.")
                     return
                 else:
-                    assignment_dct = {}
-                    assignment_dct[name] = account
-                    await sheet_data.insert_bookings(self.bot, ctx, url, dict([(name, account)]), book_duration)
+                    await sheet_data.insert_bookings(self.bot, ctx, url, [account], book_duration)
                     await ctx.author.send(embed=account.embed)
                     return
 
@@ -276,7 +274,8 @@ class AccountDistrubution(commands.Cog):
             if account.is_booked:
                 continue
             else:
-                await sheet_data.insert_bookings(self.bot, ctx, url, dict([(name, account)]), book_duration)
+                account.last_user = name
+                await sheet_data.insert_bookings(self.bot, ctx, url, [account], book_duration)
                 await ctx.author.send(embed=account.embed)
                 return
 
@@ -300,22 +299,25 @@ class AccountDistrubution(commands.Cog):
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         available_accounts = []
+
+        # Find accounts that are not booked or assign all if force flag is set
         for account in sheet_data.accounts:
             if force == "force" or not account.is_booked:
                 available_accounts.append(account)
 
-
+        # TODO Need to figure out how to handle situations when one of mentioned users already has an account
         if len(available_accounts) >= len(ctx.message.mentions):
-            user_account_mapping = {}
+            accounts_to_assign = []
             for member in ctx.message.mentions:
                 # Making sure account usage is evenly spread
                 random.shuffle(available_accounts)
                 account = available_accounts.pop()
                 name = member.nick if member.nick is not None else member.name
-                user_account_mapping[name] = account
+                account.last_user = name
+                accounts_to_assign.append(account)
                 await member.send(embed=account.embed)
-                await ctx.author.send(f"Member {member.nick} has been assigned account {account.name}.")
-            await sheet_data.insert_bookings(self.bot, ctx, url, user_account_mapping, 1)
+                await ctx.author.send(f"Member {name} has been assigned account {account.name}.")
+            await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
         else:
             raise NotImplementedError("MAKE OWN EXCEPTION HERE")
 
