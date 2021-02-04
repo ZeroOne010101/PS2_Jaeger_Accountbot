@@ -39,4 +39,4 @@ Invite link and Instructions Coming Soon<sup>TM</sup>
 
 To Asorr for providing the resources neccesary to host the bot instance.
 
-To @vilgovskiy for helping me code this bot.
+To [TheJerry (AKA vilgovskiy)](https://github.com/vilgovskiy) for helping me code this bot.
