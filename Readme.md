@@ -1,4 +1,4 @@
-# PS2 Jaeger Accountbot  ![build](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/workflows/build/badge.svg?branch=master)
+# PS2 Jaeger Accountbot  ![master](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/workflows/master/badge.svg?branch=master)
 ## About
 The bot is written in discord.py and is currently being developed in cooperation with the RITE Outfit.
 Its primary purpose is the distribution of temporary accounts for the Jaeger Server of the MMOFPS Planetside 2.
