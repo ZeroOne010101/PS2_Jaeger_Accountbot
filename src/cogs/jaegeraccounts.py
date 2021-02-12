@@ -4,7 +4,7 @@ from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union, List
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError, NoAccountsLeftException
 import logging
 import random
 
@@ -45,9 +45,9 @@ class Account:
 
 class SheetData:
     def __init__(self):
-        self.raw_data = None
-        self.accounts = None
-        self.ctx = None
+        self.raw_data: str = None
+        self.accounts: List[Account] = None
+        self.ctx: commands.Context = None
 
     @staticmethod
     def _get_sheet_data(url: str):
@@ -97,7 +97,7 @@ class SheetData:
 
                         try:
                             last_booked_from = datetime.datetime.strptime(
-                                from_datetime_str, "%-m/%-d/%Y_%-I:%-M%p")
+                                from_datetime_str, "%m/%d/%Y_%I:%M%p")
                             last_booked_from = last_booked_from.replace(tzinfo=datetime.timezone(
                                 datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
 
@@ -105,7 +105,7 @@ class SheetData:
                             if to_time_str:
                                 to_datetime_str = date_str + "_" + to_time_str
                                 last_booked_to = datetime.datetime.strptime(
-                                    to_datetime_str, "%-m/%-d/%Y_%-I:%-M%p")
+                                    to_datetime_str, "%m/%d/%Y_%I:%M%p")
                                 last_booked_to = last_booked_to.replace(tzinfo=datetime.timezone(
                                     datetime.timedelta(hours=utcoffset)))  # Makes datetime object timezone aware
                                 # Handle booking across days
@@ -141,12 +141,13 @@ class SheetData:
     @classmethod
     async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str):
         """Creates a SheetData object from the arguments given"""
+        cls = cls()
         cls.ctx = ctx
         cls.raw_data = await bot.loop.run_in_executor(None, cls._get_sheet_data, url)
         cls.accounts = await cls._get_accounts()
-        return cls()
+        return cls
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List([Account]), book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List[Account], book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -195,8 +196,8 @@ class SheetData:
             await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
-        hrs_now = now.strftime("%-I:%-M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")
+        hrs_now = now.strftime("%I:%M%p")
+        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%I:%M%p")
 
         for account in accounts_to_write:
             write_data = f"{account.last_user}({hrs_now}-{hrs_after_x})"
@@ -313,7 +314,7 @@ class AccountDistrubution(commands.Cog):
                 await ctx.author.send(f"Member {name} has been assigned account {account.name}.")
             await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
         else:
-            raise NotImplementedError("MAKE OWN EXCEPTION HERE")
+            raise NoAccountsLeftException("There are not enought accounts in the google sheet to distribute this many accounts.")
 
 def setup(bot):
     bot.add_cog(AccountDistrubution(bot))

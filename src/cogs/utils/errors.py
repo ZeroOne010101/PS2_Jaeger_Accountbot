@@ -16,6 +16,11 @@ class BookingDurationLimitExceededError(AccountsBaseException):
     """Exception to be raised when user tries to book account for duration longer than allowed limit"""
     pass
 
+class NoAccountsLeftException(AccountsBaseException):
+    """Exception to be raised when user tries to book account for duration longer than allowed limit"""
+    pass
+
+
 class ParityBaseException(commands.CommandError):
     """Base exception for all exceptions in the paritycheck Cog"""
     pass
