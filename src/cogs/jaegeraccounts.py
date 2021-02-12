@@ -49,14 +49,16 @@ class SheetData:
         self.accounts = None
         self.ctx = None
 
-    def _get_sheet_data(self, url: str):
+    @staticmethod
+    def _get_sheet_data(url: str):
         """Fetches all relevant data from the spreadsheet"""
 
         sheet1 = gspread_service_account.open_by_url(url).get_worksheet(1)
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
-    def _write_sheet_data(self, url: str, row: int, col: int, data: str):
+    @staticmethod
+    def _write_sheet_data(url: str, row: int, col: int, data: str):
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
 
         sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
@@ -139,11 +141,10 @@ class SheetData:
     @classmethod
     async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str):
         """Creates a SheetData object from the arguments given"""
-        cls = cls()
         cls.ctx = ctx
         cls.raw_data = await bot.loop.run_in_executor(None, cls._get_sheet_data, url)
         cls.accounts = await cls._get_accounts()
-        return cls
+        return cls()
 
     async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List([Account]), book_duration: int):
         # Will need to compare dates
@@ -207,9 +208,6 @@ class SheetData:
 class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    def _account_to_sheet(self, url):
-        gspread_service_account.open_by_url(url).sheet1
 
     @commands.guild_only()
     @commands.group(invoke_without_command=True)
