@@ -22,9 +22,8 @@ class Errorhandler(commands.Cog):
             return
 
         # Prevents any cogs with an overwritten cog_command_error from being handled here.
-        if ctx.cog:
-            if ctx.cog._get_overridden_method(ctx.cog.cog_command_error) is not None:
-                return
+        if ctx.cog and ctx.cog._get_overridden_method(ctx.cog.cog_command_error) is not None:
+            return
 
         # Do nothing if the error is ignored
         ignored = (commands.CommandNotFound, )

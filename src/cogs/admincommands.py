@@ -21,13 +21,13 @@ class Admincommands(commands.Cog, command_attrs=dict(hidden=True)):
 
     @commands.is_owner()
     @commands.group(name='message', invoke_without_command=True)
-    async def message(self, ctx, user_id, *, message):
+    async def message(self, _, user_id, *, message):
         user = self.bot.get_user(int(user_id))
         await user.send(message)
 
     @commands.is_owner()
     @message.command(name='admins')
-    async def admins(self, ctx, *, message):
+    async def admins(self, _, *, message):
         for guild in self.bot.guilds:
             await guild.owner.send(message)
 

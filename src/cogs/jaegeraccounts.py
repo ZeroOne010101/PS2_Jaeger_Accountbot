@@ -3,7 +3,7 @@ import discord
 from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
-from typing import Union
+from typing import Union, List
 from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
 import random
@@ -39,10 +39,8 @@ class Account:
 
     @property
     def is_booked(self):
-        if self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo):
-            return True
-        else:
-            return False
+        booked = bool(self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo))
+        return booked
 
 
 class SheetData:
@@ -64,7 +62,6 @@ class SheetData:
         sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
-        return
 
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
@@ -135,9 +132,8 @@ class SheetData:
             name = self.ctx.author.nick
 
         for account in self.accounts:
-            if account.last_user == name:
-                if account.is_booked:
-                    return account
+            if account.last_user == name and account.is_booked:
+                return account
         return None
 
     @classmethod
@@ -149,11 +145,11 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: list([Account]), book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List([Account]), book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-        
+
         raw_dates = self.raw_data[0]
         indexed_dates = enumerate(raw_dates)
         last_date = None
@@ -192,14 +188,14 @@ class SheetData:
             last_date = today
             last_index = len(raw_dates) + 1
             create_new_column = True
-        
+
         # Add new date column if needed
         if create_new_column:
             await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
         hrs_now = now.strftime("%-I:%-M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")        
+        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%-I:%-M%p")
 
         for account in accounts_to_write:
             write_data = f"{account.last_user}({hrs_now}-{hrs_after_x})"
@@ -212,7 +208,7 @@ class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def _account_to_sheet(self, url, account):
+    def _account_to_sheet(self, url):
         gspread_service_account.open_by_url(url).sheet1
 
     @commands.guild_only()
@@ -256,7 +252,7 @@ class AccountDistrubution(commands.Cog):
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
-        
+
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
             if account.last_user == name:

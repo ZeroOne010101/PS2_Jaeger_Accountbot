@@ -9,7 +9,7 @@ class Settings(commands.Cog):
     ##### Jaeger Accounts #####
     @commands.guild_only()
     @commands.group(invoke_without_command=True, aliases=["utcoffset"])
-    async def utc_offset(self, ctx, offset=None):
+    async def utc_offset(self, ctx):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
