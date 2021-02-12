@@ -23,7 +23,7 @@ class Settings(commands.Cog):
         except ValueError:
             raise commands.BadArgument("Error: Please only enter numbers between -23 and 23")
 
-        if offset >= -23 and offset <= 23:
+        if -23 <= offset <= 23:
             async with dbPool.acquire() as conn:
                 async with conn.transaction():
                     await conn.execute("UPDATE guilds SET utcoffset = $1 WHERE guild_id = $2;", offset, ctx.guild.id)
