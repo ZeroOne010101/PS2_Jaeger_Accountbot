@@ -8,15 +8,14 @@ class Settings(commands.Cog):
 
     ##### Jaeger Accounts #####
     @commands.guild_only()
-    @commands.group(invoke_without_command=True, aliases=["utcoffset"])
+    @commands.group(invoke_without_command=True, aliases=["utcoffset", "utc-offset"])
     async def utc_offset(self, ctx):
         async with dbPool.acquire() as conn:
-            async with conn.transaction():
-                db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
+            db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
         await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
 
     @commands.guild_only()
-    @utc_offset.command(name="set")  # Collides with builtin set
+    @utc_offset.command(name="set")
     async def set_utc_offset(self, ctx, offset):
         try:
             offset = int(offset)
@@ -31,7 +30,7 @@ class Settings(commands.Cog):
             raise commands.BadArgument("Error: Please only enter numbers between -23 and 23")
 
     @commands.guild_only()
-    @commands.group(invoke_without_command=True, aliases=["jaegerurl"])
+    @commands.group(invoke_without_command=True, aliases=["jaegerurl", "jaeger-url"])
     async def jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
             db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
@@ -40,7 +39,7 @@ class Settings(commands.Cog):
         await ctx.reply(f"The account url for this guild is currently `{db_url}`.")
 
     @commands.guild_only()
-    @jaeger_url.command(name="set")  # Collides with builtin set
+    @jaeger_url.command(name="set")
     async def set_jaeger_url(self, ctx, url):
         try:
             await self.bot.loop.run_in_executor(None, gspread_service_account.open_by_url, url)
@@ -62,7 +61,7 @@ class Settings(commands.Cog):
                 await conn.execute("DELETE FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
 
     @commands.guild_only()
-    @commands.group(invoke_without_command=True, aliases=["outfitname"])
+    @commands.group(invoke_without_command=True, aliases=["outfitname", "outfit-name"])
     async def outfit_name(self, ctx):
         async with dbPool.acquire() as conn:
             outfit_name = await conn.fetchval("SELECT outfit_name FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -71,7 +70,7 @@ class Settings(commands.Cog):
         await ctx.reply(f"The outfit name for this guild is currently `{outfit_name}`.")
 
     @commands.guild_only()
-    @outfit_name.command(name="set")  # Collides with builtin set
+    @outfit_name.command(name="set")
     async def set_outfit_name(self, ctx, *, outfit_name):
         async with dbPool.acquire() as conn:
             async with conn.transaction():

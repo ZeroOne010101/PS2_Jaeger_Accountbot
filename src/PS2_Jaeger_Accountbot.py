@@ -4,10 +4,10 @@ import logging
 import os
 import cogs.utils.shared_recources as shared_recources
 
-# TODO Remove transactions where no data is getting written
 # TODO Figure out invite permissions
-# Tmp. Invite: https://discord.com/oauth2/authorize?client_id=751830501639323718&scope=bot&permissions=280640"
-# Setting base path, only needed for windows, TODO remove later
+# Tmp. Invite: https://discord.com/oauth2/authorize?client_id=751830501639323718&scope=bot&permissions=134144"
+# Setting base path, only needed for windows
+# TODO remove later
 os.chdir(shared_recources.path)
 
 # Setting up basic logging
@@ -20,15 +20,14 @@ async def _get_prefix(bot, ctx):
     Defaults to '!' if no custom prefix has been set.
     """
     async with shared_recources.dbPool.acquire() as conn:
-        async with conn.transaction():
-            db_records = await conn.fetch('SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);', ctx.guild.id)
-            if db_records:
-                if len(db_records) > 1:
-                    prefixes = [record['prefix'] for record in db_records]
-                else:
-                    prefixes = [db_records[0]['prefix']]
+        db_records = await conn.fetch('SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);', ctx.guild.id)
+        if db_records:
+            if len(db_records) > 1:
+                prefixes = [record['prefix'] for record in db_records]
             else:
-                prefixes = ['!']
+                prefixes = [db_records[0]['prefix']]
+        else:
+            prefixes = ['!']
     return commands.when_mentioned_or(*prefixes)(bot, ctx)
 
 # Define gateway intents

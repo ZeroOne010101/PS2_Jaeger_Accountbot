@@ -15,10 +15,9 @@ class Prefixes(commands.Cog):
         prefix_str = ""
         try:
             async with dbPool.acquire() as conn:
-                async with conn.transaction():
-                    db_records = await conn.fetch("SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
-                    for db_record in db_records:
-                        prefix_str += f"{db_record['prefix']}\n"
+                db_records = await conn.fetch("SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+                for db_record in db_records:
+                    prefix_str += f"{db_record['prefix']}\n"
             if prefix_str != "":
                 await ctx.reply(f"```{prefix_str[:-1]}```")
             else:

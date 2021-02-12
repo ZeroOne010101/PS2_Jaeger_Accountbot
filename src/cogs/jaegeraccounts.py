@@ -89,8 +89,7 @@ class SheetData:
                             from_time_str = match.group(2)
                             to_time_str = match.group(3)
                         else:
-                            raise InvalidSheetsValue(
-                                "There seems to be a time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue("There seems to be a time (username) formatting error in the google sheets document.")
 
                         date_str = self.raw_data[:1][0][index]
                         from_datetime_str = date_str + "_" + from_time_str
@@ -114,8 +113,7 @@ class SheetData:
                                         hours=24)
                             break
                         except ValueError:
-                            raise InvalidSheetsValue(
-                                "There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue("There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
                 else:
                     last_user = None
                     last_booked_from = None
@@ -216,8 +214,7 @@ class AccountDistrubution(commands.Cog):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException(
-                "There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         account = await sheet_data.user_has_account()
@@ -278,7 +275,7 @@ class AccountDistrubution(commands.Cog):
         await ctx.author.send("```There are currently no free accounts.\nIf you need one urgently, talk to your OVO rep.```")
 
     @commands.guild_only()
-    @commands.command()
+    @commands.command(aliases=["distributeaccounts", "distribute-accounts"])
     async def distribute_accounts(self, ctx: commands.Context, force="False"):
         """
         Distributes accounts to all mentioned users.
@@ -289,8 +286,7 @@ class AccountDistrubution(commands.Cog):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException(
-                "There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         available_accounts = []
