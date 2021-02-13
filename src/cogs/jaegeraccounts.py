@@ -3,10 +3,11 @@ import discord
 from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
-from typing import Union
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
+from typing import Union, List
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError, NoAccountsLeftException
 import logging
-
+import random
+from cogs.utils.checks import is_admin, is_mod
 # Allow to book acounts for 12 hours max
 BOOKING_DURATION_LIMIT = 12
 
@@ -38,26 +39,26 @@ class Account:
 
     @property
     def is_booked(self):
-        if self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo):
-            return True
-        else:
-            return False
+        booked = bool(self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo))
+        return booked
 
 
 class SheetData:
     def __init__(self):
-        self.raw_data = None
-        self.accounts = None
-        self.ctx = None
+        self.raw_data: str = None
+        self.accounts: List[Account] = None
+        self.ctx: commands.Context = None
 
-    def _get_sheet_data(self, url: str):
+    @staticmethod
+    def _get_sheet_data(url: str):
         """Fetches all relevant data from the spreadsheet"""
 
         sheet1 = gspread_service_account.open_by_url(url).get_worksheet(1)
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
-    def _write_sheet_data(self, url: str, row: int, col: int, data: str):
+    @staticmethod
+    def _write_sheet_data(url: str, row: int, col: int, data: str):
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
 
         sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
@@ -134,9 +135,8 @@ class SheetData:
             name = self.ctx.author.nick
 
         for account in self.accounts:
-            if account.last_user == name:
-                if account.is_booked:
-                    return account
+            if account.last_user == name and account.is_booked:
+                return account
         return None
 
     @classmethod
@@ -148,7 +148,7 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: list([Account]), book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List[Account], book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -236,7 +236,12 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @account.command()
     async def book(self, ctx, duration='1'):
+        """
+        Books an account.
 
+        Arguments:
+        duration       The duration(in h) to book the account for.
+        """
         book_duration = 1
         if duration.isnumeric() and int(duration) > 0:
             book_duration = int(duration)
@@ -282,8 +287,8 @@ class AccountDistrubution(commands.Cog):
         await ctx.author.send("```There are currently no free accounts.\nIf you need one urgently, talk to your OVO rep.```")
 
     @commands.guild_only()
-    @commands.command()
-    async def distribute_accounts(self, ctx: commands.Context, force="False"):
+    @commands.check_any(is_mod(), is_admin())
+    @commands.command(aliases=["distributeaccounts", "distribute-accounts"])
         """
         Distributes accounts to all mentioned users.
 
