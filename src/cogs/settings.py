@@ -1,6 +1,7 @@
 from discord.ext import commands
 from .utils.shared_recources import dbPool, gspread_service_account
 import gspread
+from cogs.utils.checks import is_mod, is_admin
 
 class Settings(commands.Cog):
     def __init__(self, bot):
@@ -8,6 +9,7 @@ class Settings(commands.Cog):
 
     ##### Jaeger Accounts #####
     @commands.guild_only()
+    @commands.check_any(is_admin(), is_mod())
     @commands.group(invoke_without_command=True, aliases=["utcoffset", "utc-offset"])
     async def utc_offset(self, ctx):
         async with dbPool.acquire() as conn:
@@ -15,6 +17,7 @@ class Settings(commands.Cog):
         await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @utc_offset.command(name="set")
     async def set_utc_offset(self, ctx, offset):
         try:
@@ -30,6 +33,7 @@ class Settings(commands.Cog):
             raise commands.BadArgument("Error: Please only enter numbers between -23 and 23")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @commands.group(invoke_without_command=True, aliases=["jaegerurl", "jaeger-url"])
     async def jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
@@ -39,6 +43,7 @@ class Settings(commands.Cog):
         await ctx.reply(f"The account url for this guild is currently `{db_url}`.")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @jaeger_url.command(name="set")
     async def set_jaeger_url(self, ctx, url):
         try:
@@ -54,6 +59,7 @@ class Settings(commands.Cog):
             raise commands.BadArgument("Error: The Spreadsheet that you have specified could not be found")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @jaeger_url.command(name="delete")
     async def delete_jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
@@ -61,6 +67,7 @@ class Settings(commands.Cog):
                 await conn.execute("DELETE FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @commands.group(invoke_without_command=True, aliases=["outfitname", "outfit-name"])
     async def outfit_name(self, ctx):
         async with dbPool.acquire() as conn:
@@ -70,6 +77,7 @@ class Settings(commands.Cog):
         await ctx.reply(f"The outfit name for this guild is currently `{outfit_name}`.")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @outfit_name.command(name="set")
     async def set_outfit_name(self, ctx, *, outfit_name):
         async with dbPool.acquire() as conn:
@@ -77,6 +85,7 @@ class Settings(commands.Cog):
                 await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", outfit_name, ctx.guild.id)
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @outfit_name.command(name="delete")
     async def delete_outfit_name(self, ctx):
         async with dbPool.acquire() as conn:

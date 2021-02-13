@@ -2,6 +2,7 @@ from discord.ext import commands
 from .utils.shared_recources import dbPool
 import logging
 from asyncpg import PostgresError, StringDataRightTruncationError
+from cogs.utils.checks import is_admin, is_mod
 
 class Prefixes(commands.Cog):
     """Cog that contains prefix settings for server admins"""
@@ -10,8 +11,10 @@ class Prefixes(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def prefix(self, ctx):
-        """Add, remove or view prefixes.
-        Lists all active prefixes if no argumants are given."""
+        """
+        Add, remove or view prefixes.
+        Lists all active prefixes if no argumants are given.
+        """
         prefix_str = ""
         try:
             async with dbPool.acquire() as conn:
@@ -30,9 +33,13 @@ class Prefixes(commands.Cog):
             raise error
 
     @prefix.command()
+    @commands.guild_only()
+    @commands.check_any(is_admin(), is_mod())
     async def add(self, ctx, prefix):
-        """Adds a prefix.
-        If this is the first prefix added for a server, it overrides the default prefix."""
+        """
+        Adds a prefix.
+        If this is the first prefix added for a server, it overrides the default prefix.
+        """
         try:
             async with dbPool.acquire() as conn:
                 async with conn.transaction():
@@ -50,9 +57,13 @@ class Prefixes(commands.Cog):
             raise error
 
     @prefix.command()
+    @commands.guild_only()
+    @commands.check_any(is_admin(), is_mod())
     async def remove(self, ctx, prefix):
-        """Removes a prefix.
-        If all prefixes are removed, the prefix reverts to the default."""
+        """
+        Removes a prefix.
+        If all prefixes are removed, the prefix reverts to the default.
+        """
         try:
             async with dbPool.acquire() as conn:
                 async with conn.transaction():

@@ -7,6 +7,7 @@ from typing import Union, List
 from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError, NoAccountsLeftException
 import logging
 import random
+from cogs.utils.checks import is_admin, is_mod
 
 # Allow to book acounts for 12 hours max
 BOOKING_DURATION_LIMIT = 12
@@ -211,6 +212,7 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @commands.group(invoke_without_command=True)
     async def account(self, ctx):
+        """Prints the currently booked account."""
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -229,7 +231,12 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @account.command()
     async def book(self, ctx, duration='1'):
+        """
+        Books an account.
 
+        Arguments:
+        duration       The duration(in h) to book the account for.
+        """
         book_duration = 1
         if duration.isnumeric() and int(duration) > 0:
             book_duration = int(duration)
@@ -275,6 +282,7 @@ class AccountDistrubution(commands.Cog):
         await ctx.author.send("```There are currently no free accounts.\nIf you need one urgently, talk to your OVO rep.```")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @commands.command(aliases=["distributeaccounts", "distribute-accounts"])
     async def distribute_accounts(self, ctx: commands.Context, force="False"):
         """

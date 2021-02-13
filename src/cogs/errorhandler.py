@@ -51,6 +51,9 @@ class Errorhandler(commands.Cog):
         elif isinstance(error, ParityBaseException):
             await ctx.reply(f"```{error}```")
 
+        elif isinstance(error, commands.CheckFailure):
+            await ctx.reply(f"```{error}```")
+
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, gspread.exceptions.APIError):
                 if error.original.response.status_code == 403:
