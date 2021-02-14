@@ -8,6 +8,7 @@ from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingD
 import logging
 import random
 from cogs.utils.checks import is_admin, is_mod
+
 # Allow to book acounts for 12 hours max
 BOOKING_DURATION_LIMIT = 12
 
@@ -64,7 +65,6 @@ class SheetData:
         sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
-        return
 
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
@@ -90,8 +90,7 @@ class SheetData:
                             from_time_str = match.group(2)
                             to_time_str = match.group(3)
                         else:
-                            raise InvalidSheetsValue(
-                                "There seems to be a time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue("There seems to be a time (username) formatting error in the google sheets document.")
 
                         date_str = self.raw_data[:1][0][index]
                         from_datetime_str = date_str + "_" + from_time_str
@@ -115,8 +114,7 @@ class SheetData:
                                         hours=24)
                             break
                         except ValueError:
-                            raise InvalidSheetsValue(
-                                "There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue("There seems to be a date (top row) or time (username) formatting error in the google sheets document.")
                 else:
                     last_user = None
                     last_booked_from = None
@@ -152,7 +150,6 @@ class SheetData:
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-        
         raw_dates = self.raw_data[0]
         indexed_dates = enumerate(raw_dates)
         last_date = None
@@ -191,14 +188,14 @@ class SheetData:
             last_date = today
             last_index = len(raw_dates) + 1
             create_new_column = True
-        
+
         # Add new date column if needed
         if create_new_column:
             await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
         hrs_now = now.strftime("%I:%M%p")
-        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%I:%M%p")        
+        hrs_after_x = (now + datetime.timedelta(hours=book_duration)).strftime("%I:%M%p")
 
         for account in accounts_to_write:
             write_data = f"{account.last_user}({hrs_now}-{hrs_after_x})"
@@ -260,7 +257,7 @@ class AccountDistrubution(commands.Cog):
         name = ctx.author.name
         if ctx.author.nick is not None:
             name = ctx.author.nick
-        
+
         # Try to assign accounts to the person that last had it as often as possible.
         for account in sheet_data.accounts:
             if account.last_user == name:
@@ -310,7 +307,7 @@ class AccountDistrubution(commands.Cog):
         for member in ctx.message.mentions:
             name = member.nick if member.nick is not None else member.name
             mentioned_users_accounts[name] = {"member": member}
-        
+
         # Find accounts that are not booked or were booked for some of mentioned users or assign all if force flag is set
         for account in sheet_data.accounts:
             if account.last_user in mentioned_users_accounts:
@@ -318,7 +315,7 @@ class AccountDistrubution(commands.Cog):
             elif force == "force" or not account.is_booked:
                 available_accounts.append(account)
 
-        accounts_to_assign = []      
+        accounts_to_assign = []
         for memberName, pairing in mentioned_users_accounts.items():
             member = pairing["member"]
             # If user already has previous account, check if its booked and send corresponding info
