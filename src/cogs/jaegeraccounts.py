@@ -64,7 +64,6 @@ class SheetData:
         sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
-        return
 
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
