@@ -4,9 +4,8 @@ from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union, List
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError, NoAccountsLeftException
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
-import random
 from cogs.utils.checks import is_admin, is_mod
 
 # Allow to book acounts for 12 hours max
@@ -150,7 +149,6 @@ class SheetData:
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-
         raw_dates = self.raw_data[0]
         indexed_dates = enumerate(raw_dates)
         last_date = None
@@ -209,14 +207,17 @@ class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def _account_to_sheet(self, url, account):
+        gspread_service_account.open_by_url(url).sheet1
+
     @commands.guild_only()
     @commands.group(invoke_without_command=True)
     async def account(self, ctx):
-        """Prints the currently booked account."""
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException(
+                "There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         account = await sheet_data.user_has_account()
@@ -294,31 +295,52 @@ class AccountDistrubution(commands.Cog):
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException(
+                "There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         available_accounts = []
 
-        # Find accounts that are not booked or assign all if force flag is set
+        # This is done in effort to allow users to consistently book same accounts
+        mentioned_users_accounts = {}
+        for member in ctx.message.mentions:
+            name = member.nick if member.nick is not None else member.name
+            mentioned_users_accounts[name] = {"member": member}
+
+        # Find accounts that are not booked or were booked for some of mentioned users or assign all if force flag is set
         for account in sheet_data.accounts:
-            if force == "force" or not account.is_booked:
+            if account.last_user in mentioned_users_accounts:
+                mentioned_users_accounts[account.last_user]["account"] = account
+            elif force == "force" or not account.is_booked:
                 available_accounts.append(account)
 
-        # TODO Need to figure out how to handle situations when one of mentioned users already has an account
-        if len(available_accounts) >= len(ctx.message.mentions):
-            accounts_to_assign = []
-            for member in ctx.message.mentions:
-                # Making sure account usage is evenly spread
-                random.shuffle(available_accounts)
+        accounts_to_assign = []
+        for memberName, pairing in mentioned_users_accounts.items():
+            member = pairing["member"]
+            # If user already has previous account, check if its booked and send corresponding info
+            if "account" in pairing:
+                account = pairing["account"]
+                if account.is_booked:
+                    await member.send(f"You have already been assigned: `{account.name}`.\nPlease check your PMs for the login details.")
+                else:
+                    accounts_to_assign.append(account)
+                    member.send(embed=account.embed)
+                    await member.send(embed=account.embed)
+                    await ctx.author.send(f"Member {memberName} has been assigned account {account.name}.")
+            # If user doesnt have previously assigned account, find available and send
+            elif (len(available_accounts) > 0):
                 account = available_accounts.pop()
-                name = member.nick if member.nick is not None else member.name
-                account.last_user = name
+                account.last_user = memberName
                 accounts_to_assign.append(account)
                 await member.send(embed=account.embed)
-                await ctx.author.send(f"Member {name} has been assigned account {account.name}.")
-            await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
-        else:
-            raise NoAccountsLeftException("There are not enought accounts in the google sheet to distribute this many accounts.")
+                await ctx.author.send(f"Member {memberName} has been assigned account {account.name}.")
+                # In case if ran out of accounts, notify requester about that
+                if len(available_accounts) == 0:
+                    await ctx.author.send("You have used all available account!")
+            else:
+                await ctx.author.send(f"Can not assign account to {memberName}, no more available accounts left!")
+
+        await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
 
 def setup(bot):
     bot.add_cog(AccountDistrubution(bot))
