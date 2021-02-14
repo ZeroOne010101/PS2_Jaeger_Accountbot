@@ -207,9 +207,6 @@ class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def _account_to_sheet(self, url, account):
-        gspread_service_account.open_by_url(url).sheet1
-
     @commands.guild_only()
     @commands.group(invoke_without_command=True)
     async def account(self, ctx):
@@ -315,7 +312,7 @@ class AccountDistrubution(commands.Cog):
                 available_accounts.append(account)
 
         accounts_to_assign = []
-        for memberName, pairing in mentioned_users_accounts.items():
+        for member_name, pairing in mentioned_users_accounts.items():
             member = pairing["member"]
             # If user already has previous account, check if its booked and send corresponding info
             if "account" in pairing:
@@ -324,21 +321,20 @@ class AccountDistrubution(commands.Cog):
                     await member.send(f"You have already been assigned: `{account.name}`.\nPlease check your PMs for the login details.")
                 else:
                     accounts_to_assign.append(account)
-                    member.send(embed=account.embed)
                     await member.send(embed=account.embed)
-                    await ctx.author.send(f"Member {memberName} has been assigned account {account.name}.")
+                    await ctx.author.send(f"Member {member_name} has been assigned account {account.name}.")
             # If user doesnt have previously assigned account, find available and send
             elif (len(available_accounts) > 0):
                 account = available_accounts.pop()
-                account.last_user = memberName
+                account.last_user = member_name
                 accounts_to_assign.append(account)
                 await member.send(embed=account.embed)
-                await ctx.author.send(f"Member {memberName} has been assigned account {account.name}.")
+                await ctx.author.send(f"Member {member_name} has been assigned account {account.name}.")
                 # In case if ran out of accounts, notify requester about that
                 if len(available_accounts) == 0:
                     await ctx.author.send("You have used all available account!")
             else:
-                await ctx.author.send(f"Can not assign account to {memberName}, no more available accounts left!")
+                await ctx.author.send(f"Can not assign account to {member_name}, no more available accounts left!")
 
         await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
 
