@@ -4,9 +4,8 @@ from cogs.utils.shared_recources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union, List
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError, NoAccountsLeftException
+from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
-import random
 from cogs.utils.checks import is_admin, is_mod
 
 # Allow to book acounts for 12 hours max
@@ -90,7 +89,7 @@ class SheetData:
                             from_time_str = match.group(2)
                             to_time_str = match.group(3)
                         else:
-                            raise InvalidSheetsValue( "There seems to be a time (username) formatting error in the google sheets document.")
+                            raise InvalidSheetsValue("There seems to be a time (username) formatting error in the google sheets document.")
 
                         date_str = self.raw_data[:1][0][index]
                         from_datetime_str = date_str + "_" + from_time_str
