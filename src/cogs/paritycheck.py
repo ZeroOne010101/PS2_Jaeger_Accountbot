@@ -43,7 +43,7 @@ class Paritycheck(commands.Cog):
 
             # Match member and character object by discord username
             for outfit_member, outfit_character in zip(outfit_member_list, outfit_character_list):
-                if outfit_character.name() == guild_member.name or outfit_character.name() == guild_member.nick:
+                if outfit_character.name() in (guild_member.name, guild_member.nick):
                     matched_character = outfit_character
                     matched_member = outfit_member
                     break

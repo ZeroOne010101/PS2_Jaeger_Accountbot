@@ -51,7 +51,11 @@ class Settings(commands.Cog):
             async with dbPool.acquire() as conn:
                 async with conn.transaction():
                     db_guild_id = await conn.fetchval("SELECT id FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-                    await conn.execute("INSERT INTO sheet_urls(fk, url) VALUES($1, $2);", db_guild_id, url)  # BUG @TheJerry This could be one for you, it should update if it already exists. This'd do it, but i dont get it: https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT
+                    existing_id = await conn.fetchval("SELECT id FROM sheet_urls WHERE fk = $1;", db_guild_id)
+                    if existing_id:
+                        await conn.execute("UPDATE sheet_urls SET fk=$1, url=$2 WHERE id = $3;", db_guild_id, url, existing_id)
+                    else:
+                        await conn.execute("INSERT INTO sheet_urls(fk, url) VALUES($1, $2);", db_guild_id, url)
         except (gspread.SpreadsheetNotFound,
                 gspread.exceptions.NoValidUrlKeyFound,
                 gspread.exceptions.WorksheetNotFound,
