@@ -80,6 +80,11 @@ async def info(ctx):
     info_embed.add_field(name="Help", value="`!help`\n[Discord](https://discord.com/invite/yvnRZjJ)\n[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/issues)", inline=False)
     await ctx.reply(embed=info_embed)
 
+@bot.command()
+async def invite(ctx):
+    embed = discord.Embed(title="Invite me!", url=shared_recources.botSettings['inviteLink'])
+    await ctx.reply(embed=embed)
+
 # Add guild to db if it gets invited
 @bot.event
 async def on_guild_join(guild):
