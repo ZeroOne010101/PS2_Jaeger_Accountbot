@@ -17,24 +17,23 @@ Its primary purpose is the distribution of temporary accounts for the Jaeger Ser
 - Please keep in mind, that the Settings commands are restricted to users with mod or admin privileges.
 
 ## Features
-
-<sup>A</sup> This command is only usable by users with mod or admin privileges.
-
+All commands marked by an <sup><b>A</b></sup> are only usable by users with mod or admin privileges.  
+All commands can also be called without the hyphen for convenience. (e.g. `!utc-offset`->`!utcoffset`)
 | Command | Description |
 | --- | --- |
 | **Miscellaneous** |
-| !help (command)| Lists commands and displays help for the command specified. |
-| !ping | Displays the Bot's latency. |
+| `!help (command)`| Lists commands and displays help for the command specified. |
+| `!ping` | Displays the Bot's latency. |
 | **Settings** |
-| !utc_offset (set)<sup>A</sup> | Displays/Sets the utc offset used for the google sheet. |
-| !jaeger_url (set\|delete)<sup>A</sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
-| !outfit_name (set\|delete)<sup>A</sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
+| `!utc-offset (set)`<sup><b>A</b></sup> | Displays/Sets the utc offset used for the google sheet. |
+| `!jaeger-url (set\|delete)`<sup><b>A</b></sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
+| `!outfit-name (set\|delete)`<sup><b>A</b></sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
 | **Account Distribution** |
-| !account | Displays the the name of the users currently provisioned account. |
-| !account book \<hours>| Book an account for the specified time if there are any available. |
-| !account (force)distribute \<mentions><sup>A</sup>| Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
+| `!account` | Displays the the name of the users currently provisioned account. |
+| `!account book <hours>`| Book an account for the specified time if there are any available. |
+| `!account distribute (force) <mentions>`<sup><b>A</b></sup>| Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
 | **Parity Check** |
-| !paritycheck | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
+| `!paritycheck` | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
 
 ## Special Thanks
 
