@@ -38,7 +38,10 @@ intents.typing = False
 intents.presences = False
 
 # Define bot
-bot = commands.Bot(command_prefix=_get_prefix, owner_id=shared_recources.botSettings['owner_id'], intents=intents)
+bot = commands.Bot(
+    command_prefix=_get_prefix, owner_id=shared_recources.botSettings['owner_id'],
+    intents=intents, help_command=commands.MinimalHelpCommand()
+)
 
 # Checks if the bot is ready. Nothing executes boefore the check has passed.
 @bot.event
@@ -72,6 +75,13 @@ async def on_ready():
 async def ping(ctx):
     """Reports the bots latency."""
     await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency}s latency.```')
+
+@bot.command(aliases=["about"])
+async def info(ctx):
+    info_embed = discord.Embed(title="Info", description="A discord bot that assigns temporary jaeger accounts.")
+    info_embed.add_field(name="Code & Documentation", value="[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot)", inline=False)
+    info_embed.add_field(name="Help", value="`!help`\n[Discord](https://discord.com/invite/yvnRZjJ)\n[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/issues)", inline=False)
+    await ctx.reply(embed=info_embed)
 
 # Add guild to db if it gets invited
 @bot.event
