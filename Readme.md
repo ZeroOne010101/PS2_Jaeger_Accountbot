@@ -9,12 +9,13 @@ The bot is written in discord.py and is currently being developed in cooperation
 Its primary purpose is the distribution of temporary accounts for the Jaeger Server of the MMOFPS Planetside 2.
 
 ## Setup
-- Set the UTC-Offset of your timezone using the `!utc_offset set <value>` command.  
+- Set the UTC-Offset of your timezone using the `!utc-offset set <value>` command.  
   This is necessary to make sure the bot enters the correct date and time in your google sheets.
-- Set the google sheets url using the `!jaeger_url set <url>` command.  
+- Set the google sheets url using the `!jaeger-url set <url>` command.  
   The bot's service account needs to have read and write access, so you may need to add it to the sheet.  
   The service account's address is ps2jaegeraccountbotsa@ps2jaegeraccountbot.iam.gserviceaccount.com.
-- Please keep in mind, that the Settings commands are restricted to users with mod or admin privileges.
+- Set the outfit name using `!outfit-name set <name>`.
+- Please keep in mind, that some Settings commands are restricted to users with mod or admin privileges.
 
 ## Features
 All commands marked by an <sup><b>A</b></sup> are only usable by users with mod or admin privileges.  
@@ -22,16 +23,16 @@ All commands can also be called without the hyphen for convenience. (e.g. `!utc-
 | Command | Description |
 | --- | --- |
 | **Miscellaneous** |
-| `!help (command)`| Lists commands and displays help for the command specified. |
+| `!help (command)` | Lists commands and displays help for the command specified. |
 | `!ping` | Displays the Bot's latency. |
 | **Settings** |
-| `!utc-offset (set)`<sup><b>A</b></sup> | Displays/Sets the utc offset used for the google sheet. |
-| `!jaeger-url (set\|delete)`<sup><b>A</b></sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
-| `!outfit-name (set\|delete)`<sup><b>A</b></sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
+| `!utc-offset (set) <hours>`<sup><b>A</b></sup> | Displays/Sets the utc offset used for the google sheet. |
+| `!jaeger-url (set\|delete) <url>`<sup><b>A</b></sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
+| `!outfit-name (set\|delete) <name>`<sup><b>A</b></sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
 | **Account Distribution** |
 | `!account` | Displays the the name of the users currently provisioned account. |
-| `!account book <hours>`| Book an account for the specified time if there are any available. |
-| `!account distribute (force) <mentions>`<sup><b>A</b></sup>| Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
+| `!account book <hours>` | Book an account for the specified time if there are any available. |
+| `!account distribute (force) <mentions>`<sup><b>A</b></sup> | Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
 | **Parity Check** |
 | `!paritycheck` | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
 
