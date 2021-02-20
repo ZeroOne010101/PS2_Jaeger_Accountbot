@@ -281,7 +281,7 @@ class AccountDistrubution(commands.Cog):
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
-    @commands.command(aliases=["distributeaccounts", "distribute-accounts"])
+    @commands.command(name="distribute-accounts", aliases=["distributeaccounts"])
     async def distribute_accounts(self, ctx: commands.Context, force="False"):
         """
         Distributes accounts to all mentioned users.

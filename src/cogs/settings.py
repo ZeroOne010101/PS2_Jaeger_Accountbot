@@ -10,7 +10,7 @@ class Settings(commands.Cog):
     ##### Jaeger Accounts #####
     @commands.guild_only()
     @commands.check_any(is_admin(), is_mod())
-    @commands.group(invoke_without_command=True, aliases=["utcoffset", "utc-offset"])
+    @commands.group(invoke_without_command=True, name="utc-offset", aliases=["utcoffset"])
     async def utc_offset(self, ctx):
         async with dbPool.acquire() as conn:
             db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -34,7 +34,7 @@ class Settings(commands.Cog):
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
-    @commands.group(invoke_without_command=True, aliases=["jaegerurl", "jaeger-url"])
+    @commands.group(invoke_without_command=True, name="jaeger-url", aliases=["jaegerurl"])
     async def jaeger_url(self, ctx):
         async with dbPool.acquire() as conn:
             db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
@@ -72,7 +72,7 @@ class Settings(commands.Cog):
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
-    @commands.group(invoke_without_command=True, aliases=["outfitname", "outfit-name"])
+    @commands.group(invoke_without_command=True, name="outfit-name", aliases=["outfitname"])
     async def outfit_name(self, ctx):
         async with dbPool.acquire() as conn:
             outfit_name = await conn.fetchval("SELECT outfit_name FROM guilds WHERE guild_id = $1;", ctx.guild.id)
