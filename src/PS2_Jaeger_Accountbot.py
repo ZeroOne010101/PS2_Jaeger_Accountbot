@@ -4,10 +4,7 @@ import logging
 import os
 import cogs.utils.shared_recources as shared_recources
 
-# TODO Figure out invite permissions
-# Tmp. Invite: https://discord.com/oauth2/authorize?client_id=751830501639323718&scope=bot&permissions=134144"
-# Setting base path, only needed for windows
-# TODO remove later
+# Ensuring working directory is correct
 os.chdir(shared_recources.path)
 
 # Setting up basic logging

@@ -6,7 +6,7 @@ import gspread
 # This files purpose is to define shared recources that submodules (cogs) need access to.
 # This design pattern is made possible due to python only initializing the module on the first import.
 
-# TODO Location of the python module, only needed on windows,TODO remove later
+# Absolute path of the root folder
 path = pathlib.Path('d:/Dateien/Programmieren/Python/PS2 Jaeger Accountbot')
 
 # Load settings from json file
