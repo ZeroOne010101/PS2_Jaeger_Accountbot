@@ -6,6 +6,7 @@ import re
 from typing import Union, List
 from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
+import random
 from cogs.utils.checks import is_admin, is_mod
 
 # Allow to book acounts for 12 hours max
@@ -53,7 +54,7 @@ class SheetData:
     def _get_sheet_data(url: str):
         """Fetches all relevant data from the spreadsheet"""
 
-        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(1)
+        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(0)
         sheet_data = sheet1.get("1:13")
         return sheet_data
 
@@ -61,7 +62,7 @@ class SheetData:
     def _write_sheet_data(url: str, row: int, col: int, data: str):
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
 
-        sheet = gspread_service_account.open_by_url(url).get_worksheet(1)
+        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
 
@@ -282,13 +283,25 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
     @commands.command(name="distribute-accounts", aliases=["distributeaccounts"])
-    async def distribute_accounts(self, ctx: commands.Context, force="False"):
+    async def distribute_accounts(self, ctx: commands.Context, *args):
         """
         Distributes accounts to all mentioned users.
 
         Arguments:
         force       Distributes accounts regardless of prior allocation
+        duration    The duration(in h) to book the account for.
         """
+        force = False
+        book_duration = 1
+        for arg in args:
+            if arg in ["force", "Force"]:
+                force = True
+            elif arg.isdigit() and int(arg) > 0:
+                book_duration = int(arg)
+                if book_duration > BOOKING_DURATION_LIMIT:
+                    raise BookingDurationLimitExceededError(f"Can not book a account for longer than 12 hours. ({book_duration} > 12 By the way :stuck_out_tongue_winking_eye:)")    
+
+
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -308,8 +321,11 @@ class AccountDistrubution(commands.Cog):
         for account in sheet_data.accounts:
             if account.last_user in mentioned_users_accounts:
                 mentioned_users_accounts[account.last_user]["account"] = account
-            elif force == "force" or not account.is_booked:
+            elif force or not account.is_booked:
                 available_accounts.append(account)
+        
+        # Shuffle available accounts so more accounts are being used
+        random.shuffle(available_accounts)
 
         accounts_to_assign = []
         for member_name, pairing in mentioned_users_accounts.items():
@@ -336,7 +352,7 @@ class AccountDistrubution(commands.Cog):
             else:
                 await ctx.author.send(f"Can not assign account to {member_name}, no more available accounts left!")
 
-        await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, 1)
+        await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, book_duration)
 
 def setup(bot):
     bot.add_cog(AccountDistrubution(bot))
