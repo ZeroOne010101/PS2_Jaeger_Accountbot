@@ -64,7 +64,8 @@ class Errorhandler(commands.Cog):
 
             elif isinstance(error.original, discord.errors.HTTPException):
                 if error.original.code == 50035:
-                    await ctx.reply("```Error: The command you have executed resulted in too large of a message to send.```")
+                    await ctx.reply("```Error: The command you have executed resulted in too large of a message to send.\nThis error should not occur naturally, please contact the bot's administrator to fix.```")
+                    await self._log_trace_then_raise(ctx, error)
                 else:
                     await self._log_trace_then_raise(ctx, error)
 

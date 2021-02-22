@@ -299,14 +299,12 @@ class AccountDistrubution(commands.Cog):
             elif arg.isdigit() and int(arg) > 0:
                 book_duration = int(arg)
                 if book_duration > BOOKING_DURATION_LIMIT:
-                    raise BookingDurationLimitExceededError(f"Can not book a account for longer than 12 hours. ({book_duration} > 12 By the way :stuck_out_tongue_winking_eye:)")    
-
+                    raise BookingDurationLimitExceededError(f"Can not book a account for longer than 12 hours. ({book_duration} > 12 By the way :stuck_out_tongue_winking_eye:)")
 
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
-            raise NoSheetsUrlException(
-                "There is no google sheets url associated with this guild.")
+            raise NoSheetsUrlException("There is no google sheets url associated with this guild.")
 
         sheet_data = await SheetData.from_url(self.bot, ctx, url)
         available_accounts = []
@@ -323,7 +321,7 @@ class AccountDistrubution(commands.Cog):
                 mentioned_users_accounts[account.last_user]["account"] = account
             elif force or not account.is_booked:
                 available_accounts.append(account)
-        
+
         # Shuffle available accounts so more accounts are being used
         random.shuffle(available_accounts)
 
