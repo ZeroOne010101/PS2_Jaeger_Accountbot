@@ -4,6 +4,7 @@ import auraxium
 from auraxium import ps2
 from .utils.shared_recources import dbPool, botSettings
 from .utils.errors import NoOutfitNameError, InvalidOutfitNameError
+from copy import deepcopy
 
 class Paritycheck(commands.Cog):
     def __init__(self, bot):
@@ -22,9 +23,6 @@ class Paritycheck(commands.Cog):
         # Inform user of delay
         await ctx.reply("`Getting data, this may take some time...`")
 
-        # Initialize embed object
-        embed = discord.Embed(title="Checkresults")
-
         # Get census api data
         async with auraxium.Client(service_id=botSettings['censusToken']) as client:
             outfit = await client.get_by_name(ps2.Outfit, outfit_name)
@@ -34,12 +32,19 @@ class Paritycheck(commands.Cog):
             outfit_member_list = await outfit.members()
             outfit_character_list = [await i.character() for i in outfit_member_list]
 
+        outliers_list = []
+
         # Compare guild layout to outfit layout
         for guild_member in ctx.guild.members:
             matched_member = None
             matched_character = None
             # Leaving this in in case determining the role is ever necessary
             # matched_role = None
+
+            if guild_member.nick is not None:
+                display_name = guild_member.nick
+            else:
+                display_name = guild_member.name
 
             # Match member and character object by discord username
             for outfit_member, outfit_character in zip(outfit_member_list, outfit_character_list):
@@ -49,7 +54,7 @@ class Paritycheck(commands.Cog):
                     break
 
             if matched_character is None:
-                embed.add_field(name=guild_member.name, value="Name does not match any outfit member.", inline=False)
+                outliers_list.append((display_name, "Name does not match any outfit member."))
                 continue
 
             for role in guild_member.roles:
@@ -58,10 +63,21 @@ class Paritycheck(commands.Cog):
                     # matched_role = role
                     continue
 
-            embed.add_field(name=guild_member.name, value="No Role matching outfit rank.", inline=False)
+            outliers_list.append((display_name, "No Role matching outfit rank."))
 
-        # Reply with results and delete delay message
-        await ctx.reply(embed=embed)
+        embed_list = []
+        embed = discord.Embed(title="Checkresults")
+        for name, reason in outliers_list:
+            future_embed = deepcopy(embed)
+            future_embed.add_field(name=name, value=reason, inline=False)
+            # If embed with new items too big, add old embed to list and create new one
+            if len(future_embed) > 6000:
+                embed_list.append(embed)
+                embed = discord.Embed(title="Checkresults")
+            embed.add_field(name=name, value=reason, inline=False)
+
+        for embed in embed_list:
+            await ctx.reply(embed=embed)
 
 
 def setup(bot):
