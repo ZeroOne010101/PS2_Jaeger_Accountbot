@@ -20,6 +20,8 @@ Its primary purpose is the distribution of temporary accounts for the Jaeger Ser
 ## Features
 All commands marked by an <sup><b>A</b></sup> are only usable by users with mod or admin privileges.  
 All commands can also be called without the hyphen for convenience. (e.g. `!utc-offset`->`!utcoffset`)
+
+() = optional, <> = argument
 | Command | Description |
 | --- | --- |
 | **Miscellaneous** |
@@ -32,7 +34,7 @@ All commands can also be called without the hyphen for convenience. (e.g. `!utc-
 | **Account Distribution** |
 | `!account` | Displays the the name of the users currently provisioned account. |
 | `!account book <hours>` | Book an account for the specified time if there are any available. |
-| `!account distribute (force) <mentions>`<sup><b>A</b></sup> | Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
+| `!account distribute (force) <hours> <mentions>`<sup><b>A</b></sup> | Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
 | **Parity Check** |
 | `!paritycheck` | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
 
