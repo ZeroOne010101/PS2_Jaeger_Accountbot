@@ -4,7 +4,6 @@ import auraxium
 from auraxium import ps2
 from .utils.shared_recources import dbPool, botSettings
 from .utils.errors import NoOutfitNameError, InvalidOutfitNameError
-from copy import deepcopy
 
 class Paritycheck(commands.Cog):
     def __init__(self, bot):
@@ -68,10 +67,8 @@ class Paritycheck(commands.Cog):
         embed_list = []
         embed = discord.Embed(title="Checkresults")
         for name, reason in outliers_list:
-            future_embed = deepcopy(embed)
-            future_embed.add_field(name=name, value=reason, inline=False)
             # If embed with new items too big, add old embed to list and create new one
-            if len(future_embed) > 6000:
+            if (len(embed) + len(name) + len(reason)) > 6000:
                 embed_list.append(embed)
                 embed = discord.Embed(title="Checkresults")
             embed.add_field(name=name, value=reason, inline=False)
