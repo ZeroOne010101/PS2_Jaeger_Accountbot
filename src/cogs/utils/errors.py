@@ -32,3 +32,7 @@ class NoOutfitNameError(ParityBaseException):
 class InvalidOutfitNameError(ParityBaseException):
     """Exception to be raised when the guild has not set an outfit name"""
     pass
+
+class FailedCensusRequest(ParityBaseException):
+    """Exception to be raised when a code other than 200 is returned to a census request"""
+    pass

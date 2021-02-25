@@ -16,5 +16,5 @@
     },
     "google_service_account": "data/YOUR_SERVICE_ACCOUNT_KEY.json",
     "owner_id": YOUR_USER_ID(DEVELOPER_MODE),
-    "censusToken": "PS2_CENSUS_API_TOKEN"
+    "census_token": "PS2_CENSUS_API_TOKEN"
 }
