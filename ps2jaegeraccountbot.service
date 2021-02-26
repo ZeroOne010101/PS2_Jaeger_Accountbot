@@ -1,0 +1,10 @@
+[Unit]
+Description=The service for the PS2JaegerAccountBot
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/asorr/PS2_Jaeger_Accountbot/src/PS2_Jaeger_Accountbot.py
+RestartSec=5
+
+[Install]
+Alias=jaegeraccountbot
