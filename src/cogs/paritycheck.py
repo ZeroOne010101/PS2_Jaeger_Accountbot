@@ -54,9 +54,14 @@ class Paritycheck(commands.Cog):
                 outliers_list.append((display_name, "Name does not match any outfit member."))
                 continue
 
+            role_matches = False
             for role in guild_member.roles:
                 if role.name == matched_member['rank']:
-                    continue
+                    role_matches = True
+                    break
+
+            if role_matches:
+                continue
 
             outliers_list.append((display_name, "No Role matching outfit rank."))
 
