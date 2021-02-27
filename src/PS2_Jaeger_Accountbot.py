@@ -71,7 +71,7 @@ async def on_ready():
 @bot.command()
 async def ping(ctx):
     """Reports the bots latency."""
-    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency}s latency.```')
+    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency:.2}s latency.```')
 
 @bot.command(aliases=["about"])
 async def info(ctx):
