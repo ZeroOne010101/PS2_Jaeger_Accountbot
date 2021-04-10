@@ -47,13 +47,13 @@ class Account:
 class SheetData:
     def __init__(self):
         self.raw_data: str = None
+        self.col_count: int = None
         self.accounts: List[Account] = None
         self.ctx: commands.Context = None
 
     @staticmethod
     def _get_sheet_data(url: str):
         """Fetches all relevant data from the spreadsheet"""
-
         sheet1 = gspread_service_account.open_by_url(url).get_worksheet(0)
         sheet_data = sheet1.get("1:13")
         return sheet_data
@@ -65,6 +65,20 @@ class SheetData:
         sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
         update_info = sheet.update_cell(row, col, data)
         logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
+
+    @staticmethod
+    def _get_col_count(url: str):
+        """Gets the number of columns in the first worksheet of $url"""
+        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
+        col_count = sheet.col_count
+        return col_count
+
+    @staticmethod
+    def _add_columns(url: str, nr: int):
+        """Adds $nr new columns to the first spreadsheet in url"""
+        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
+        add_info = sheet.add_cols(nr)
+        logging.info(f"Added column: `{add_info}`")
 
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
@@ -143,6 +157,7 @@ class SheetData:
         cls = cls()
         cls.ctx = ctx
         cls.raw_data = await bot.loop.run_in_executor(None, cls._get_sheet_data, url)
+        cls.col_count = await bot.loop.run_in_executor(None, cls._get_col_count, url)
         cls.accounts = await cls._get_accounts()
         return cls
 
@@ -178,7 +193,7 @@ class SheetData:
                 last_account_booked_date = account.last_booked_to.date()
 
         create_new_column = False
-        # If last date in sheet is before today, create new row
+        # If last date in sheet is before today, create new column
         if last_date is None or today > last_date.date():
             last_date = today
             last_index = len(raw_dates) + 1
@@ -191,6 +206,8 @@ class SheetData:
 
         # Add new date column if needed
         if create_new_column:
+            if last_index > self.col_count:
+                await bot.loop.run_in_executor(None, self._add_columns, url, 1)
             await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
