@@ -8,6 +8,7 @@ from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingD
 import logging
 import random
 from cogs.utils.checks import is_admin, is_mod
+import gspread
 
 # Allow to book acounts for 12 hours max
 BOOKING_DURATION_LIMIT = 12
@@ -47,38 +48,19 @@ class Account:
 class SheetData:
     def __init__(self):
         self.raw_data: str = None
-        self.col_count: int = None
+        self.url: str = None
+        self.worksheet1: gspread.models.Worksheet = None
         self.accounts: List[Account] = None
         self.ctx: commands.Context = None
 
-    @staticmethod
-    def _get_sheet_data(url: str):
+    def _get_worksheet(self):
+        worksheet = gspread_service_account.open_by_url(self.url).get_worksheet(0)
+        return worksheet
+
+    def _get_sheet_data(self):
         """Fetches all relevant data from the spreadsheet"""
-        sheet1 = gspread_service_account.open_by_url(url).get_worksheet(0)
-        sheet_data = sheet1.get("1:13")
+        sheet_data = self.worksheet1.get("1:13")
         return sheet_data
-
-    @staticmethod
-    def _write_sheet_data(url: str, row: int, col: int, data: str):
-        """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
-
-        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
-        update_info = sheet.update_cell(row, col, data)
-        logging.info(f"Updated: `{update_info['updatedRange']}` with data: `{data}`")
-
-    @staticmethod
-    def _get_col_count(url: str):
-        """Gets the number of columns in the first worksheet of $url"""
-        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
-        col_count = sheet.col_count
-        return col_count
-
-    @staticmethod
-    def _add_columns(url: str, nr: int):
-        """Adds $nr new columns to the first spreadsheet in url"""
-        sheet = gspread_service_account.open_by_url(url).get_worksheet(0)
-        add_info = sheet.add_cols(nr)
-        logging.info(f"Added column: `{add_info}`")
 
     async def _get_accounts(self):
         """Parses accounts out of the raw data"""
@@ -139,6 +121,17 @@ class SheetData:
             account_row += 1
         return accounts
 
+    @classmethod
+    async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str):
+        """Creates a SheetData object from the arguments given"""
+        cls = cls()
+        cls.ctx = ctx
+        cls.url = url
+        cls.worksheet1 = await bot.loop.run_in_executor(None, cls._get_worksheet)
+        cls.raw_data = await bot.loop.run_in_executor(None, cls._get_sheet_data)
+        cls.accounts = await cls._get_accounts()
+        return cls
+
     async def user_has_account(self):
         """Returns the users currently booked account or None"""
         # Necessary because author.nick is None if the user has not changed his name on the server
@@ -151,17 +144,17 @@ class SheetData:
                 return account
         return None
 
-    @classmethod
-    async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str):
-        """Creates a SheetData object from the arguments given"""
-        cls = cls()
-        cls.ctx = ctx
-        cls.raw_data = await bot.loop.run_in_executor(None, cls._get_sheet_data, url)
-        cls.col_count = await bot.loop.run_in_executor(None, cls._get_col_count, url)
-        cls.accounts = await cls._get_accounts()
-        return cls
+    def _write_sheet_data(self, row: int, col: int, data: str):
+        """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
+        update_info = self.worksheet1.update_cell(row, col, data)
+        logging.info(f"Updated: ´{update_info['updatedRange']}´ with data: ´{data}´")
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, url: str, accounts_to_write: List[Account], book_duration: int):
+    def _add_columns(self, amount: int):
+        """Adds $amount new columns to the worksheet"""
+        add_info = self.worksheet1.add_cols(amount)
+        logging.info(f"Added column: `{add_info}`")
+
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, accounts_to_write: List[Account], book_duration: int):
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -206,9 +199,9 @@ class SheetData:
 
         # Add new date column if needed
         if create_new_column:
-            if last_index > self.col_count:
-                await bot.loop.run_in_executor(None, self._add_columns, url, 1)
-            await bot.loop.run_in_executor(None, self._write_sheet_data, url, 1, last_index, last_date.strftime("%m/%d/%Y"))
+            if last_index > self.worksheet1.col_count:  # BUG might not work, not sure if data or request
+                await bot.loop.run_in_executor(None, self._add_columns, 1)
+            await bot.loop.run_in_executor(None, self._write_sheet_data, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
         # Prepare data to write
         hrs_now = now.strftime("%I:%M%p")
@@ -219,7 +212,7 @@ class SheetData:
             write_row = account.account_row
             write_col = last_index
 
-            await bot.loop.run_in_executor(None, self._write_sheet_data, url, write_row, write_col, write_data)
+            await bot.loop.run_in_executor(None, self._write_sheet_data, write_row, write_col, write_data)
 
 class AccountDistrubution(commands.Cog):
     def __init__(self, bot):
@@ -280,7 +273,7 @@ class AccountDistrubution(commands.Cog):
                                     "Please check your PMs for the login details.")
                     return
                 else:
-                    await sheet_data.insert_bookings(self.bot, ctx, url, [account], book_duration)
+                    await sheet_data.insert_bookings(self.bot, ctx, [account], book_duration)
                     await ctx.author.send(embed=account.embed)
                     return
 
@@ -290,7 +283,7 @@ class AccountDistrubution(commands.Cog):
                 continue
             else:
                 account.last_user = name
-                await sheet_data.insert_bookings(self.bot, ctx, url, [account], book_duration)
+                await sheet_data.insert_bookings(self.bot, ctx, [account], book_duration)
                 await ctx.author.send(embed=account.embed)
                 return
 
@@ -367,7 +360,7 @@ class AccountDistrubution(commands.Cog):
             else:
                 await ctx.author.send(f"Can not assign account to {member_name}, no more available accounts left!")
 
-        await sheet_data.insert_bookings(self.bot, ctx, url, accounts_to_assign, book_duration)
+        await sheet_data.insert_bookings(self.bot, ctx, accounts_to_assign, book_duration)
 
 def setup(bot):
     bot.add_cog(AccountDistrubution(bot))
