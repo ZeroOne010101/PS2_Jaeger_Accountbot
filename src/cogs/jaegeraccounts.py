@@ -199,7 +199,7 @@ class SheetData:
 
         # Add new date column if needed
         if create_new_column:
-            if last_index > self.worksheet1.col_count:  # BUG might not work, not sure if data or request
+            if last_index > self.worksheet1.col_count:
                 await bot.loop.run_in_executor(None, self._add_columns, 1)
             await bot.loop.run_in_executor(None, self._write_sheet_data, 1, last_index, last_date.strftime("%m/%d/%Y"))
 
