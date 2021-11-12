@@ -27,7 +27,7 @@ class Account:
 
     @property
     def embed(self):
-        terms_of_service = "\u2022 You may only use the account for this occation.\n\u2022 You are not allowed create, delete, or add characters to the account.\n\u2022 You are not allowed to ASP the charakter.\n" \
+        terms_of_service = "\u2022 You may only use the account for this occasion.\n\u2022 You are not allowed create, delete, or add characters to the account.\n\u2022 You are not allowed to ASP the character.\n" \
                            "\u2022 You are expected to follow the [Jaeger Code of Conduct](https://docs.google.com/document/d/1zlx6BgZKHyKvt2d04d1jnyjvNZLgeLgsPANg38ANRS4/edit) and not disturb any of the [currently ongoing events](https://docs.google.com/spreadsheets/d/1eA4ybkAiz-nv_mPxu_laL504nwTDmc-9GnsojnTiSRE/edit) on the server.\n" \
                            "\u2022 Failure to follow these rules may result in repercussions, both for you personally and for your outfit."
 
