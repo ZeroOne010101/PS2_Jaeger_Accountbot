@@ -5,12 +5,6 @@ class Miscellaneous(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    # Basic ping command to enable connection Troubleshooting
-    @commands.command()
-    async def ping(self, ctx):
-        """Reports the bots latency."""
-        await ctx.reply(f'Pong! :ping_pong:\n```The bot has {self.bot.latency:.2}s latency.```')
-
     # Info command to display basic information
     @commands.command(aliases=["about"])
     async def info(self, ctx):

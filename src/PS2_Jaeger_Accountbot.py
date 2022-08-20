@@ -44,6 +44,11 @@ async def on_ready():
                 async with conn.transaction():
                     await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
+# Basic ping command to enable troubleshooting
+@bot.command()
+async def ping(ctx):
+    """Reports the bots latency."""
+    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency:.2}s latency.```')
 
 
 
