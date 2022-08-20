@@ -3,6 +3,6 @@
 .git
 
 # Prevent files with potentially sensitive information from getting committed
-ps2jaegeraccountbot*.json
+data/ps2jaegeraccountbot*.json
 data/settings.json
 data/logfile.log
