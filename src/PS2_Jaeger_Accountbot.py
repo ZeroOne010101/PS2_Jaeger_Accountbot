@@ -52,10 +52,7 @@ async def on_ready():
 
 
 
-
-
-
-
+### Old Code
 
 
 from discord.ext import commands
