@@ -1,6 +1,6 @@
 from discord.ext import commands
 import discord
-from cogs.utils.shared_recources import dbPool, gspread_service_account
+from cogs.utils.shared_resources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union, List

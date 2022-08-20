@@ -1,44 +1,48 @@
+import os
 import discord
+from discord.ext import commands
+import utils.shared_resources as shared_resources
+import utils
 
+# Ensure working directory is correct
+os.chdir(shared_resources.path)
 
+# Define Intents and Bot
+intents = discord.Intents.default()
+bot = commands.Bot(
+    command_prefix=utils.get_prefix,
+    intents=intents,
+    owner_id=shared_resources.botSettings['owner_id'],
+    help_command=commands.MinimalHelpCommand()
+)
 
+# Checks if the bot is ready. Nothing executes before this check has passed.
+@bot.event
+async def on_ready():
+    logging.info('The bot is now ready!')
+    logging.info(f'Logged in as {bot.user}')
 
+    # Initialize database pool
+    await shared_resources.initialize_pool()
+    await bot.loop.run_in_executor(None, shared_resources.initialize_gspread_service_account)  # TODO Figure out an alternative to this, because of the new async paradigm
 
+    # Load cogs from settings file
+    for cog_str in shared_resources.botSettings['cogs']:
+        bot.load_extension(cog_str)
 
+    # Add guilds that the bot is part of to db if not already in there
+    async with shared_resources.dbPool.acquire() as conn:
+        # Get records from db
+        guild_id_list = []
+        guild_id_records = await conn.fetch('SELECT guild_id FROM guilds;')
+        for record in guild_id_records:
+            guild_id_list.append(record['guild_id'])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # Compare list from db with list from discord and add missing
+        for guild in bot.guilds:
+            if guild.id not in guild_id_list:
+                async with conn.transaction():
+                    await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
 
 
@@ -58,10 +62,10 @@ from discord.ext import commands
 import discord
 import logging
 import os
-import cogs.utils.shared_recources as shared_recources
+import cogs.utils.shared_resources as shared_resources
 
 # Ensuring working directory is correct
-os.chdir(shared_recources.path)
+os.chdir(shared_resources.path)
 
 # Setting up basic logging
 logging.basicConfig(format="[%(asctime)s] %(levelname)s:%(message)s", level=logging.INFO, datefmt="%d.%m.%Y %H:%M:%S", filename="data/logfile.log")
@@ -72,7 +76,7 @@ async def _get_prefix(bot, ctx):
     Function that is used by the bot to determine the custom prefix of the guild.
     Defaults to '!' if no custom prefix has been set.
     """
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         db_records = await conn.fetch('SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);', ctx.guild.id)
         if db_records:
             if len(db_records) > 1:
@@ -92,7 +96,7 @@ intents.presences = False
 
 # Define bot
 bot = commands.Bot(
-    command_prefix=_get_prefix, owner_id=shared_recources.botSettings['owner_id'],
+    command_prefix=_get_prefix, owner_id=shared_resources.botSettings['owner_id'],
     intents=intents, help_command=commands.MinimalHelpCommand()
 )
 
@@ -103,15 +107,15 @@ async def on_ready():
     logging.info(f'Logged in as {bot.user}')
 
     # Initialize database pool
-    await shared_recources.initialize_pool()
-    await bot.loop.run_in_executor(None, shared_recources.initialize_gspread_service_account)
+    await shared_resources.initialize_pool()
+    await bot.loop.run_in_executor(None, shared_resources.initialize_gspread_service_account)
 
     # Load cogs from settings file
-    for cog_str in shared_recources.botSettings['cogs']:
+    for cog_str in shared_resources.botSettings['cogs']:
         bot.load_extension(cog_str)
 
     # Add guilds that the bot is part of to db if not already in there
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         # Get records from db
         guild_id_list = []
         guild_id_records = await conn.fetch('SELECT guild_id FROM guilds;')
@@ -138,20 +142,20 @@ async def info(ctx):
 
 @bot.command()
 async def invite(ctx):
-    embed = discord.Embed(title="Invite me!", url=shared_recources.botSettings['inviteLink'])
+    embed = discord.Embed(title="Invite me!", url=shared_resources.botSettings['inviteLink'])
     await ctx.reply(embed=embed)
 
 # Add guild to db if it gets invited
 @bot.event
 async def on_guild_join(guild):
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         async with conn.transaction():
             await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
 # Remove guild from db if it gets kicked
 @bot.event
 async def on_guild_remove(guild):
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         async with conn.transaction():
             await conn.execute('DELETE FROM guilds WHERE guild_id = $1;', guild.id)
 
@@ -204,4 +208,4 @@ async def loaded(ctx):
     """Reports all loded modules."""
     await ctx.reply(f'```{bot.extensions}```')
 
-bot.run(shared_recources.botSettings['token'])
+bot.run(shared_resources.botSettings['token'])

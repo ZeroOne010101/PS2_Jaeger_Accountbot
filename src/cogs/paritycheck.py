@@ -2,7 +2,7 @@ from discord.ext import commands
 import discord
 from urllib.parse import quote
 import aiohttp
-from .utils.shared_recources import dbPool, botSettings
+from .utils.shared_resources import dbPool, botSettings
 from .utils.errors import NoOutfitNameError, InvalidOutfitNameError, FailedCensusRequest
 
 class Paritycheck(commands.Cog):

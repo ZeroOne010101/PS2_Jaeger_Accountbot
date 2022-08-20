@@ -1,5 +1,5 @@
 from discord.ext import commands
-from .utils.shared_recources import dbPool
+from .utils.shared_resources import dbPool
 import logging
 from asyncpg import PostgresError, StringDataRightTruncationError
 from cogs.utils.checks import is_admin, is_mod

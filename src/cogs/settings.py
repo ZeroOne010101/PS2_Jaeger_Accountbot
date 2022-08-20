@@ -1,5 +1,5 @@
 from discord.ext import commands
-from .utils.shared_recources import dbPool, gspread_service_account
+from .utils.shared_resources import dbPool, gspread_service_account
 import gspread
 from cogs.utils.checks import is_mod, is_admin
 
