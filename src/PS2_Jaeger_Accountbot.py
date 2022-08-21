@@ -58,6 +58,7 @@ async def on_ready():
                 async with conn.transaction():
                     await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
+    # Synchronize App-Commands with discord
     await bot.tree.sync()
 
 

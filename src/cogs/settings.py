@@ -1,7 +1,7 @@
 from discord.ext import commands
-from .utils.shared_resources import dbPool, gspread_service_account
+from utils.shared_resources import dbPool, gspread_service_account
 import gspread
-from cogs.utils.checks import is_mod, is_admin
+from utils.checks import is_mod, is_admin
 
 class Settings(commands.Cog):
     def __init__(self, bot):
@@ -10,8 +10,9 @@ class Settings(commands.Cog):
     ##### Jaeger Accounts #####
     @commands.guild_only()
     @commands.check_any(is_admin(), is_mod())
-    @commands.group(invoke_without_command=True, name="utc-offset", aliases=["utcoffset"])
+    @commands.hybrid_group(invoke_without_command=True, name="utc-offset", aliases=["utcoffset"], fallback="show")
     async def utc_offset(self, ctx):
+        """Shows the currently set UTC offset"""
         async with dbPool.acquire() as conn:
             db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
         await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
@@ -20,6 +21,7 @@ class Settings(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @utc_offset.command(name="set")
     async def set_utc_offset(self, ctx, offset):
+        """Changes the UTC offset to a specified value"""
         try:
             offset = int(offset)
         except ValueError:
@@ -34,8 +36,9 @@ class Settings(commands.Cog):
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
-    @commands.group(invoke_without_command=True, name="jaeger-url", aliases=["jaegerurl"])
+    @commands.hybrid_group(invoke_without_command=True, name="jaeger-url", aliases=["jaegerurl"], fallback="show")
     async def jaeger_url(self, ctx):
+        """Shows the currently set google-sheets url for jaeger accounts"""
         async with dbPool.acquire() as conn:
             db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
             if db_url is None:
@@ -46,6 +49,7 @@ class Settings(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @jaeger_url.command(name="set")
     async def set_jaeger_url(self, ctx, url):
+        """Changes the google-sheets url"""
         try:
             await self.bot.loop.run_in_executor(None, gspread_service_account.open_by_url, url)
             async with dbPool.acquire() as conn:
@@ -66,14 +70,16 @@ class Settings(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @jaeger_url.command(name="delete")
     async def delete_jaeger_url(self, ctx):
+        """Deletes the currently set google-sheets url"""
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("DELETE FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
-    @commands.group(invoke_without_command=True, name="outfit-name", aliases=["outfitname"])
+    @commands.hybrid_group(invoke_without_command=True, name="outfit-name", aliases=["outfitname"], fallback="show")
     async def outfit_name(self, ctx):
+        """Shows the currently set ingame outfit name"""
         async with dbPool.acquire() as conn:
             outfit_name = await conn.fetchval("SELECT outfit_name FROM guilds WHERE guild_id = $1;", ctx.guild.id)
             if outfit_name is None:
@@ -84,6 +90,7 @@ class Settings(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @outfit_name.command(name="set")
     async def set_outfit_name(self, ctx, *, outfit_name):
+        """Changes the currently set ingame outfit name"""
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", outfit_name, ctx.guild.id)
@@ -92,9 +99,10 @@ class Settings(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @outfit_name.command(name="delete")
     async def delete_outfit_name(self, ctx):
+        """Deletes the currently set ingame outfit name"""
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", None, ctx.guild.id)
 
-def setup(bot):
-    bot.add_cog(Settings(bot))
+async def setup(bot):
+    await bot.add_cog(Settings(bot))

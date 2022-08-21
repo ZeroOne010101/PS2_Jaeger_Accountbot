@@ -9,6 +9,7 @@ class Miscellaneous(commands.Cog):
     # Info command to display basic information
     @commands.hybrid_command(aliases=["about"])
     async def info(self, ctx):
+        """Shows some information about the bot"""
         info_embed = discord.Embed(title="Info", description="A discord bot that assigns temporary jaeger accounts.")
         info_embed.add_field(name="Code & Documentation", value="[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot)", inline=False)
         info_embed.add_field(name="Help", value="`!help`\n[Discord](https://discord.com/invite/yvnRZjJ)\n[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/issues)", inline=False)
@@ -17,6 +18,7 @@ class Miscellaneous(commands.Cog):
     # Prints the Invite url inside an embed
     @commands.hybrid_command()
     async def invite(self, ctx):
+        """Shows the bots invite link"""
         embed = discord.Embed(title="Invite me!", url=shared_resources.botSettings['inviteLink'])
         await ctx.reply(embed=embed)
 
