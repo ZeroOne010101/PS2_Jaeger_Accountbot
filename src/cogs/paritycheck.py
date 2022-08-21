@@ -85,5 +85,5 @@ class Paritycheck(commands.Cog):
         for embed in embed_list:
             await ctx.reply(embed=embed)
 
-def setup(bot):
+async def setup(bot):
     bot.add_cog(Paritycheck(bot))
