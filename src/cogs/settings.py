@@ -15,7 +15,7 @@ class Settings(commands.Cog):
         """Shows the currently set UTC offset"""
         async with dbPool.acquire() as conn:
             db_offset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
-        await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset} hours`.")
+        await ctx.reply(f"The UTC Offset for this Guild is currently set to `{db_offset}` hours")
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
@@ -31,6 +31,7 @@ class Settings(commands.Cog):
             async with dbPool.acquire() as conn:
                 async with conn.transaction():
                     await conn.execute("UPDATE guilds SET utcoffset = $1 WHERE guild_id = $2;", offset, ctx.guild.id)
+            await ctx.reply(f"The UTC offset has been changed to `{offset}`")
         else:
             raise commands.BadArgument("Error: Please only enter numbers between -23 and 23")
 
@@ -43,7 +44,7 @@ class Settings(commands.Cog):
             db_url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
             if db_url is None:
                 db_url = "not set"
-        await ctx.reply(f"The account url for this guild is currently `{db_url}`.")
+        await ctx.reply(f"The google-sheets url for this guild is currently `{db_url}`")
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
@@ -60,6 +61,7 @@ class Settings(commands.Cog):
                         await conn.execute("UPDATE sheet_urls SET fk=$1, url=$2 WHERE id = $3;", db_guild_id, url, existing_id)
                     else:
                         await conn.execute("INSERT INTO sheet_urls(fk, url) VALUES($1, $2);", db_guild_id, url)
+            await ctx.reply(f"The google-sheets url has been set to `{url}`")
         except (gspread.SpreadsheetNotFound,
                 gspread.exceptions.NoValidUrlKeyFound,
                 gspread.exceptions.WorksheetNotFound,
@@ -74,6 +76,7 @@ class Settings(commands.Cog):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("DELETE FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+        await ctx.reply("The google-sheets url has been deleted")
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
@@ -94,6 +97,7 @@ class Settings(commands.Cog):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", outfit_name, ctx.guild.id)
+        await ctx.reply(f"The outfit name has been changed to `{outfit_name}`")
 
     @commands.guild_only()
     @commands.check_any(is_mod(), is_admin())
@@ -103,6 +107,7 @@ class Settings(commands.Cog):
         async with dbPool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute("UPDATE guilds SET outfit_name = $1 WHERE guild_id = $2;", None, ctx.guild.id)
+        await ctx.reply("The outfit name has been deleted")
 
 async def setup(bot):
     await bot.add_cog(Settings(bot))

@@ -30,6 +30,7 @@ class JaegerBot(commands.Bot):
 # Define Intents and instanciate JaegerBot
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = JaegerBot(
     command_prefix=get_prefix,
     intents=intents,

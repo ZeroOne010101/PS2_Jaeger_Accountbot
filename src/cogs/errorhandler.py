@@ -1,7 +1,7 @@
 from discord.ext import commands
 import logging
 import traceback
-from .utils.errors import AccountsBaseException, ParityBaseException
+from utils.errors import AccountsBaseException, ParityBaseException
 import gspread
 import discord
 
@@ -75,5 +75,5 @@ class Errorhandler(commands.Cog):
         else:
             await self._log_trace_then_raise(ctx, error)
 
-def setup(bot):
-    bot.add_cog(Errorhandler(bot))
+async def setup(bot):
+    await bot.add_cog(Errorhandler(bot))

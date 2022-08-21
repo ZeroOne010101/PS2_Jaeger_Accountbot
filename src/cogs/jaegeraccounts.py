@@ -1,13 +1,13 @@
 from discord.ext import commands
 import discord
-from cogs.utils.shared_resources import dbPool, gspread_service_account
+from utils.shared_resources import dbPool, gspread_service_account
 import datetime
 import re
 from typing import Union, List
-from cogs.utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
+from utils.errors import InvalidSheetsValue, NoSheetsUrlException, BookingDurationLimitExceededError
 import logging
 import random
-from cogs.utils.checks import is_admin, is_mod
+from utils.checks import is_admin, is_mod
 import gspread
 
 # Allow to book acounts for 12 hours max
