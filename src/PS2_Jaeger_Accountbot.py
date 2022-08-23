@@ -1,61 +1,49 @@
-from discord.ext import commands
 import discord
-import logging
+from discord.ext import commands
 import os
-import cogs.utils.shared_recources as shared_recources
+import utils.shared_resources as shared_resources
+from utils.get_prefix import get_prefix
+import logging
 
-# Ensuring working directory is correct
-os.chdir(shared_recources.path)
+##### Initialisation #####
+# Ensure working directory is correct
+os.chdir(shared_resources.path)
 
 # Setting up basic logging
 logging.basicConfig(format="[%(asctime)s] %(levelname)s:%(message)s", level=logging.INFO, datefmt="%d.%m.%Y %H:%M:%S", filename="data/logfile.log")
 
-# Gets prefixes from db
-async def _get_prefix(bot, ctx):
-    """
-    Function that is used by the bot to determine the custom prefix of the guild.
-    Defaults to '!' if no custom prefix has been set.
-    """
-    async with shared_recources.dbPool.acquire() as conn:
-        db_records = await conn.fetch('SELECT prefix FROM prefixes WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);', ctx.guild.id)
-        if db_records:
-            if len(db_records) > 1:
-                prefixes = [record['prefix'] for record in db_records]
-            else:
-                prefixes = [db_records[0]['prefix']]
-        else:
-            prefixes = ['!']
-    return commands.when_mentioned_or(*prefixes)(bot, ctx)
 
-# Define gateway intents
+class JaegerBot(commands.Bot):
+    # Things to do before the bot connects
+    async def setup_hook(self):
+        # Initialize database pool
+        await shared_resources.initialize_pool()
+        await bot.loop.run_in_executor(None, shared_resources.initialize_gspread_service_account)
+
+        # Load cogs from settings file
+        for cog_str in shared_resources.botSettings['cogs']:
+            await self.load_extension(cog_str)
+
+
+# Define Intents and instanciate JaegerBot
 intents = discord.Intents.default()
-intents.members = True  # Privileged intent, needs Verification at 100+ Guilds
-# Disable spammy intents
-intents.typing = False
-intents.presences = False
-
-# Define bot
-bot = commands.Bot(
-    command_prefix=_get_prefix, owner_id=shared_recources.botSettings['owner_id'],
-    intents=intents, help_command=commands.MinimalHelpCommand()
+intents.message_content = True
+intents.members = True
+bot = JaegerBot(
+    command_prefix=get_prefix,
+    intents=intents,
+    owner_id=shared_resources.botSettings['owner_id'],
+    help_command=commands.MinimalHelpCommand()
 )
 
-# Checks if the bot is ready. Nothing executes boefore the check has passed.
+# Things that execute once after the bot has connected
 @bot.event
 async def on_ready():
     logging.info('The bot is now ready!')
     logging.info(f'Logged in as {bot.user}')
 
-    # Initialize database pool
-    await shared_recources.initialize_pool()
-    await bot.loop.run_in_executor(None, shared_recources.initialize_gspread_service_account)
-
-    # Load cogs from settings file
-    for cog_str in shared_recources.botSettings['cogs']:
-        bot.load_extension(cog_str)
-
-    # Add guilds that the bot is part of to db if not already in there
-    async with shared_recources.dbPool.acquire() as conn:
+    # Add guilds that the bot is part of to db if not already in there, and trims nonexistent guilds
+    async with shared_resources.dbPool.acquire() as conn:
         # Get records from db
         guild_id_list = []
         guild_id_records = await conn.fetch('SELECT guild_id FROM guilds;')
@@ -68,47 +56,47 @@ async def on_ready():
                 async with conn.transaction():
                     await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
-@bot.command()
-async def ping(ctx):
-    """Reports the bots latency."""
-    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency:.2}s latency.```')
+        # Compare list from discord with list from db and remove missing
+        for id in guild_id_list:
+            if id not in [guild.id for guild in bot.guilds]:
+                async with conn.transaction():
+                    await conn.execute('DELETE FROM guilds WHERE guild_id = $1;', id)
 
-@bot.command(aliases=["about"])
-async def info(ctx):
-    info_embed = discord.Embed(title="Info", description="A discord bot that assigns temporary jaeger accounts.")
-    info_embed.add_field(name="Code & Documentation", value="[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot)", inline=False)
-    info_embed.add_field(name="Help", value="`!help`\n[Discord](https://discord.com/invite/yvnRZjJ)\n[Github](https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot/issues)", inline=False)
-    await ctx.reply(embed=info_embed)
+    # Synchronize App-Commands with discord
+    await bot.tree.sync()
 
-@bot.command()
-async def invite(ctx):
-    embed = discord.Embed(title="Invite me!", url=shared_recources.botSettings['inviteLink'])
-    await ctx.reply(embed=embed)
 
+##### Database syncronisation #####
 # Add guild to db if it gets invited
 @bot.event
 async def on_guild_join(guild):
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         async with conn.transaction():
             await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
 
 # Remove guild from db if it gets kicked
 @bot.event
 async def on_guild_remove(guild):
-    async with shared_recources.dbPool.acquire() as conn:
+    async with shared_resources.dbPool.acquire() as conn:
         async with conn.transaction():
             await conn.execute('DELETE FROM guilds WHERE guild_id = $1;', guild.id)
 
-##### Cog load/unload/reload commands #####
-# These commands are not to be placed in cogs,
-# as their purpose is to load/unload them.
 
+##### Maintainance and Troubleshooting #####
+# Basic ping command to enable troubleshooting
+@bot.hybrid_command()
+async def ping(ctx):
+    """Reports the bots latency."""
+    await ctx.reply(f'Pong! :ping_pong:\n```The bot has {bot.latency:.2}s latency.```')
+
+# Command for loading new cog
 @commands.is_owner()
 @bot.command(hidden=True)
 async def load(ctx, *, module):
     """Loads a module."""
     try:
-        bot.load_extension(f'cogs.{module}')
+        await bot.load_extension(f'cogs.{module}')
+        await bot.tree.sync()
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
         await ctx.reply(f'{e.__class__.__name__}: {e}')
@@ -116,12 +104,14 @@ async def load(ctx, *, module):
         logging.info(f'module cogs.{module} was loaded successfully')
         await ctx.reply(':thumbsup:')
 
+# Command for unloading cogs
 @commands.is_owner()
 @bot.command(hidden=True)
 async def unload(ctx, *, module):
     """Unloads a module."""
     try:
-        bot.unload_extension(f'cogs.{module}')
+        await bot.unload_extension(f'cogs.{module}')
+        await bot.tree.sync()
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
         await ctx.reply(f'{e.__class__.__name__}: {e}')
@@ -129,12 +119,14 @@ async def unload(ctx, *, module):
         logging.info(f'module cogs.{module} was unloaded successfully')
         await ctx.reply(':thumbsup:')
 
+# Command for reloading cogs
 @commands.is_owner()
 @bot.command(hidden=True)
 async def reload(ctx, *, module):
     """Reloads a module."""
     try:
-        bot.reload_extension(f'cogs.{module}')
+        await bot.reload_extension(f'cogs.{module}')
+        await bot.tree.sync()
     except commands.ExtensionError as e:
         logging.error(f'{e.__class__.__name__}: {e}')
         await ctx.reply(f'{e.__class__.__name__}: {e}')
@@ -142,10 +134,11 @@ async def reload(ctx, *, module):
         logging.info(f'module cogs.{module} was reloaded successfully')
         await ctx.reply(':thumbsup:')
 
+# Print currently loaded cogs
 @commands.is_owner()
 @bot.command(hidden=True)
 async def loaded(ctx):
     """Reports all loded modules."""
     await ctx.reply(f'```{bot.extensions}```')
 
-bot.run(shared_recources.botSettings['token'])
+bot.run(shared_resources.botSettings['token'])

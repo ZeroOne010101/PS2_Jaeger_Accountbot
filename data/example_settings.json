@@ -1,20 +1,22 @@
 {
     "inviteLink": "https://discordapp.com/oauth2/authorize?client_id={CLIENT_ID}&scope=bot&permissions={PERMISSIONS_INTEGER}",
-    "token": "YOUR_DISCORD_TOKEN",
+    "token": YOUR_DISCORD_TOKEN,
     "cogs": [
-        "cogs.admincommands",
         "cogs.errorhandler",
+        "cogs.admincommands",
+        "cogs.miscellaneous",
+        "cogs.settings",
         "cogs.prefixes",
         "cogs.jaegeraccounts",
-        "cogs.settings"
+        "cogs.paritycheck"
     ],
     "postgres": {
-        "pgHost": "POSTGRESQL_HOST",
-        "pgUser": "POSTGRESQL_USER",
-        "pgPassword": "POSTGRESQL_PASSWORD",
+        "pgHost": POSTGRESQL_HOST,
+        "pgUser": POSTGRESQL_USER,
+        "pgPassword": POSTGRESQL_PASSWORD,
         "pgDatabase": "PS2JaegerAccountbot"
     },
-    "google_service_account": "data/YOUR_SERVICE_ACCOUNT_KEY.json",
+    "google_service_account": data/YOUR_SERVICE_ACCOUNT_KEY.json,
     "owner_id": YOUR_USER_ID(DEVELOPER_MODE),
-    "census_token": "PS2_CENSUS_API_TOKEN"
+    "census_token": PS2_CENSUS_API_TOKEN
 }

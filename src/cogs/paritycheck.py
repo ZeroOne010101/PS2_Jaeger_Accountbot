@@ -2,17 +2,22 @@ from discord.ext import commands
 import discord
 from urllib.parse import quote
 import aiohttp
-from .utils.shared_recources import dbPool, botSettings
-from .utils.errors import NoOutfitNameError, InvalidOutfitNameError, FailedCensusRequest
+from utils.shared_resources import dbPool, botSettings
+from utils.errors import NoOutfitNameError, InvalidOutfitNameError, FailedCensusRequest
+from utils.checks import is_admin, is_mod
 
 class Paritycheck(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=300, type=commands.BucketType.guild)  # Cooldown blocks command everytime its used for 300sec for the guild that called it
-    @commands.command()
-    async def paritycheck(self, ctx):
+    @commands.cooldown(rate=1, per=120, type=commands.BucketType.guild)  # Cooldown blocks command everytime its used for 300sec for the guild that called it
+    @commands.hybrid_group(name="planetside-parity", fallback="check")
+    async def ps2parity(self, ctx):
+        """Compares all server members discord users to their ingame characters"""
+        # Signal the server that the bot takes a while (timeout 15min instead of seconds)
+        await ctx.defer()
+
         # Get outfit name from db
         async with dbPool.acquire() as conn:
             outfit_name = await conn.fetchval("SELECT outfit_name FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -36,14 +41,22 @@ class Paritycheck(commands.Cog):
 
         # Compare guild layout to outfit layout
         for guild_member in ctx.guild.members:
+
+            # Exclude excempt members
+            async with dbPool.acquire() as conn:
+                exempt_member_id = await conn.fetchval("SELECT user_id FROM parity_exempt WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1) AND user_id = $2;", ctx.guild.id, guild_member.id)
+
+            if exempt_member_id:
+                continue
+
             matched_member = None
 
-            if guild_member.nick is not None:
+            if guild_member.nick:
                 display_name = guild_member.nick
             else:
                 display_name = guild_member.name
 
-            # Match member and character object by discord username
+            # Match census member and character object to discord username
             for member in members:
                 character = member['character']
                 if character['name']['first'] in (guild_member.name, guild_member.nick):
@@ -65,6 +78,9 @@ class Paritycheck(commands.Cog):
 
             outliers_list.append((display_name, "No Role matching outfit rank."))
 
+        if len(outliers_list) <= 0:
+            outliers_list = [["None", "No deviations from the ingame outfit were found"]]
+
         embed_list = []
         embed = discord.Embed(title="Checkresults")
 
@@ -85,5 +101,49 @@ class Paritycheck(commands.Cog):
         for embed in embed_list:
             await ctx.reply(embed=embed)
 
-def setup(bot):
-    bot.add_cog(Paritycheck(bot))
+    @commands.guild_only()
+    @ps2parity.command(name="show_excluded")
+    async def show_excluded(self, ctx):
+        """Lists users excluded from the parity check"""
+        async with dbPool.acquire() as conn:
+            excluded_records = await conn.fetch("SELECT user_id FROM parity_exempt WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
+
+        userstrings = []
+
+        for record in excluded_records:
+            member = await ctx.guild.fetch_member(record['user_id'])
+            if member is not None:
+                if member.nick is not None:
+                    display_name = member.nick
+                else:
+                    display_name = member.name
+
+                userstrings.append(display_name)
+
+        if len(userstrings) <= 0:
+            userstrings = ["None"]
+        printstring = "\n".join(userstrings)
+        await ctx.reply(f"Here are the currently excluded users:\n`{printstring}`")
+
+    @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
+    @ps2parity.command()
+    async def exclude(self, ctx, user: discord.Member):  # Validation is handled by discord.ext via typing
+        """Exclude a user from the parity check"""
+        async with dbPool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("INSERT INTO parity_exempt(fk, user_id) VALUES((SELECT id FROM guilds WHERE guild_id = $1), $2);", ctx.guild.id, user.id)
+        await ctx.reply(f"User {user.mention} has been excluded from the parity check")
+
+    @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
+    @ps2parity.command(name="unexclude")
+    async def include(self, ctx, user: discord.Member):  # Validation is handled by discord.ext via typing
+        """Removes a user from the exclusion list"""
+        async with dbPool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute("DELETE FROM parity_exempt WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1) AND user_id = $2;", ctx.guild.id, user.id)
+        await ctx.reply(f"User {user.mention} has been unexcluded from the parity check")
+
+async def setup(bot):
+    await bot.add_cog(Paritycheck(bot))

@@ -49,5 +49,5 @@ class Admincommands(commands.Cog, command_attrs=dict(hidden=True)):
             await ctx.channel.send(f"```{error.__class__.__name__}: {error}```")
 
 
-def setup(bot):
-    bot.add_cog(Admincommands(bot))
+async def setup(bot):
+    await bot.add_cog(Admincommands(bot))

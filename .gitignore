@@ -1,7 +1,8 @@
 **/__pycache__/**
 **/.vscode/**
 .git
-data/logfile.log
+
+# Prevent files with potentially sensitive information from getting committed
+data/ps2jaegeraccountbot*.json
 data/settings.json
-data/db_bckup
-ps2jaegeraccountbot*.json
+data/logfile.log
