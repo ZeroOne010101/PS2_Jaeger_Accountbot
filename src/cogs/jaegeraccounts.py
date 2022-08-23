@@ -1,3 +1,4 @@
+from typing_extensions import Self
 from discord.ext import commands
 import discord
 from utils.shared_resources import dbPool, gspread_service_account
@@ -22,11 +23,11 @@ class Account:
         self.last_booked_to = last_booked_to
         self.account_row = account_row
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Account Name: {self.name}, PW: {self.password}, last_user: {self.last_user}, last_boked_from: {self.last_booked_from}, last booked_to: {self.last_booked_to}>"
 
     @property
-    def embed(self):
+    def embed(self) -> discord.Embed:
         terms_of_service = "\u2022 You may only use the account for this occasion.\n\u2022 You are not allowed create, delete, or add characters to the account.\n\u2022 You are not allowed to ASP the character.\n" \
                            "\u2022 You are expected to follow the [Jaeger Code of Conduct](https://docs.google.com/document/d/1zlx6BgZKHyKvt2d04d1jnyjvNZLgeLgsPANg38ANRS4/edit) and not disturb any of the [currently ongoing events](https://docs.google.com/spreadsheets/d/1eA4ybkAiz-nv_mPxu_laL504nwTDmc-9GnsojnTiSRE/edit) on the server.\n" \
                            "\u2022 Failure to follow these rules may result in repercussions, both for you personally and for your outfit."
@@ -35,12 +36,14 @@ class Account:
         embed.add_field(name="Account", value=self.name, inline=True)
         embed.add_field(name="Password", value=self.password, inline=True)
         embed.add_field(name="Terms of Service",
-                        value=terms_of_service, inline=False)
+                        value=terms_of_service,
+                        inline=False
+                        )
 
         return embed
 
     @property
-    def is_booked(self):
+    def is_booked(self) -> bool:
         booked = bool(self.last_booked_to and self.last_booked_to >= datetime.datetime.now(tz=self.last_booked_to.tzinfo))
         return booked
 
@@ -53,7 +56,7 @@ class SheetData:
         self.accounts: List[Account] = None
         self.ctx: commands.Context = None
 
-    def _get_worksheet(self):
+    def _get_worksheet(self) -> gspread.Worksheet:
         worksheet = gspread_service_account.open_by_url(self.url).get_worksheet(0)
         return worksheet
 
@@ -62,7 +65,7 @@ class SheetData:
         sheet_data = self.worksheet1.get("1:13")
         return sheet_data
 
-    async def _get_accounts(self):
+    async def _get_accounts(self) -> list[Account]:
         """Parses accounts out of the raw data"""
 
         async with dbPool.acquire() as conn:
@@ -122,7 +125,7 @@ class SheetData:
         return accounts
 
     @classmethod
-    async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str):
+    async def from_url(cls, bot: commands.Bot, ctx: commands.Context, url: str) -> Self:
         """Creates a SheetData object from the arguments given"""
         cls = cls()
         cls.ctx = ctx
@@ -132,7 +135,7 @@ class SheetData:
         cls.accounts = await cls._get_accounts()
         return cls
 
-    async def user_has_account(self):
+    async def user_has_account(self) -> Account | None:
         """Returns the users currently booked account or None"""
         # Necessary because author.nick is None if the user has not changed his name on the server
         name = self.ctx.author.name
@@ -144,17 +147,17 @@ class SheetData:
                 return account
         return None
 
-    def _write_sheet_data(self, row: int, col: int, data: str):
+    def _write_sheet_data(self, row: int, col: int, data: str) -> None:
         """Writes $data to cell specified by $row and $col Note: row and col in gspread start at index 1"""
         update_info = self.worksheet1.update_cell(row, col, data)
         logging.info(f"Updated: ´{update_info['updatedRange']}´ with data: ´{data}´")
 
-    def _add_columns(self, amount: int):
+    def _add_columns(self, amount: int) -> None:
         """Adds $amount new columns to the worksheet"""
         add_info = self.worksheet1.add_cols(amount)
         logging.info(f"Added column: `{add_info}`")
 
-    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, accounts_to_write: List[Account], book_duration: int):
+    async def insert_bookings(self, bot: commands.Bot, ctx: commands.Context, accounts_to_write: List[Account], book_duration: int) -> None:
         # Will need to compare dates
         async with dbPool.acquire() as conn:
             utcoffset = await conn.fetchval("SELECT utcoffset FROM guilds WHERE guild_id = $1;", ctx.guild.id)
@@ -219,8 +222,9 @@ class AccountDistrubution(commands.Cog):
         self.bot = bot
 
     @commands.guild_only()
-    @commands.group(invoke_without_command=True)
+    @commands.hybrid_group(invoke_without_command=True, fallback="show")
     async def account(self, ctx):
+        """Shows information about your currently assigned account"""
         async with dbPool.acquire() as conn:
             url = await conn.fetchval("SELECT url FROM sheet_urls WHERE fk = (SELECT id FROM guilds WHERE guild_id = $1);", ctx.guild.id)
         if url is None:
@@ -240,12 +244,7 @@ class AccountDistrubution(commands.Cog):
     @commands.guild_only()
     @account.command()
     async def book(self, ctx, duration='1'):
-        """
-        Books an account.
-
-        Arguments:
-        duration       The duration(in h) to book the account for.
-        """
+        """Books an account"""
         book_duration = 1
         if duration.isnumeric() and int(duration) > 0:
             book_duration = int(duration)
@@ -294,13 +293,7 @@ class AccountDistrubution(commands.Cog):
     @commands.check_any(is_mod(), is_admin())
     @commands.command(name="distribute-accounts", aliases=["distributeaccounts"])
     async def distribute_accounts(self, ctx: commands.Context, *args):
-        """
-        Distributes accounts to all mentioned users.
-
-        Arguments:
-        force       Distributes accounts regardless of prior allocation
-        duration    The duration(in h) to book the account for.
-        """
+        """Distributes accounts to all mentioned users"""
         force = False
         book_duration = 1
         for arg in args:
@@ -362,5 +355,5 @@ class AccountDistrubution(commands.Cog):
 
         await sheet_data.insert_bookings(self.bot, ctx, accounts_to_assign, book_duration)
 
-def setup(bot):
-    bot.add_cog(AccountDistrubution(bot))
+async def setup(bot):
+    await bot.add_cog(AccountDistrubution(bot))
