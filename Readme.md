@@ -20,23 +20,33 @@ Its primary purpose is the distribution of temporary accounts for the Jaeger Ser
 ## Features
 All commands marked by an <sup><b>A</b></sup> are only usable by users with mod or admin privileges.  
 All commands can also be called without the hyphen for convenience. (e.g. `!utc-offset`->`!utcoffset`)
+Most commands are available as Slash Commands. Due to Discord limitations the syntax may differ slightly.
 
 () = optional, <> = argument
 | Command | Description |
 | --- | --- |
 | **Miscellaneous** |
-| `!help (command)` | Lists commands and displays help for the command specified. |
-| `!ping` | Displays the Bot's latency. |
+| `!help (command)` | Lists commands and displays help for the command specified |
+| `!ping` | Displays the Bot's latency |
+| `!info` | Shows some information about the bot |
+| `!invite` | Shows the bots invite link |
 | **Settings** |
-| `!utc-offset (set) <hours>`<sup><b>A</b></sup> | Displays/Sets the utc offset used for the google sheet. |
+| `!utc-offset (set) <hours>`<sup><b>A</b></sup> | Displays/Sets the utc offset used for the google sheet |
 | `!jaeger-url (set\|delete) <url>`<sup><b>A</b></sup> | Displays/Sets/Deletes the google sheets url the bot will try to provision accounts from. |
 | `!outfit-name (set\|delete) <name>`<sup><b>A</b></sup> | Displays/Sets/Deletes the outfit name the bot will try to use. |
+| **Prefixes** |
+| `!prefix` | Lists all active prefixes |
+| `!prefix add <prefix>`<sup><b>A</b></sup> | Adds a new prefix |
+| `!prefix delete <prefix>`<sup><b>A</b></sup> | Delete a prefix |
 | **Account Distribution** |
-| `!account` | Displays the the name of the users currently provisioned account. |
+| `!account` | Displays the the name of the users currently provisioned account |
 | `!account book <hours>` | Book an account for the specified time if there are any available. |
 | `!account distribute (force) <hours> <mentions>`<sup><b>A</b></sup> | Distribute accounts to all mentioned members. If the distribution is forced, prior allocation is ignored. |
 | **Parity Check** |
-| `!paritycheck` | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers. |
+| `!paritycheck` | Compares the Name and Role structure of your Discord to your Planetside 2 Outfit and points out the outliers |
+| `!paritycheck show_excluded` | Lists users excluded from the parity check |
+| `!paritycheck exclude <mention>`<sup><b>A</b></sup> | Exclude a user from the parity check |
+| `!paritycheck unexclude <mention>`<sup><b>A</b></sup> | Removes a user from the exclusion list |
 
 ## Special Thanks
 

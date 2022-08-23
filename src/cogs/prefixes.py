@@ -53,8 +53,8 @@ class Prefixes(commands.Cog):
     @commands.guild_only()
     @commands.check_any(is_admin(), is_mod())
     @prefix.command()
-    async def remove(self, ctx, prefix):
-        """Removes a prefix"""
+    async def delete(self, ctx, prefix):
+        """Delete a prefix"""
         try:
             async with dbPool.acquire() as conn:
                 async with conn.transaction():

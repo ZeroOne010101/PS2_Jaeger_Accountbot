@@ -4,6 +4,7 @@ from urllib.parse import quote
 import aiohttp
 from utils.shared_resources import dbPool, botSettings
 from utils.errors import NoOutfitNameError, InvalidOutfitNameError, FailedCensusRequest
+from utils.checks import is_admin, is_mod
 
 class Paritycheck(commands.Cog):
     def __init__(self, bot):
@@ -125,6 +126,7 @@ class Paritycheck(commands.Cog):
         await ctx.reply(f"Here are the currently excluded users:\n`{printstring}`")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @ps2parity.command()
     async def exclude(self, ctx, user: discord.Member):  # Validation is handled by discord.ext via typing
         """Exclude a user from the parity check"""
@@ -134,6 +136,7 @@ class Paritycheck(commands.Cog):
         await ctx.reply(f"User {user.mention} has been excluded from the parity check")
 
     @commands.guild_only()
+    @commands.check_any(is_mod(), is_admin())
     @ps2parity.command(name="unexclude")
     async def include(self, ctx, user: discord.Member):  # Validation is handled by discord.ext via typing
         """Removes a user from the exclusion list"""

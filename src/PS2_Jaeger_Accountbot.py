@@ -5,8 +5,6 @@ import utils.shared_resources as shared_resources
 from utils.get_prefix import get_prefix
 import logging
 
-# TODO Add typing to all custom functions
-
 ##### Initialisation #####
 # Ensure working directory is correct
 os.chdir(shared_resources.path)
@@ -44,8 +42,7 @@ async def on_ready():
     logging.info('The bot is now ready!')
     logging.info(f'Logged in as {bot.user}')
 
-    # Add guilds that the bot is part of to db if not already in there
-    # TODO trim expired guilds after x timeframe
+    # Add guilds that the bot is part of to db if not already in there, and trims nonexistent guilds
     async with shared_resources.dbPool.acquire() as conn:
         # Get records from db
         guild_id_list = []
@@ -58,6 +55,12 @@ async def on_ready():
             if guild.id not in guild_id_list:
                 async with conn.transaction():
                     await conn.execute('INSERT INTO guilds(guild_id) VALUES($1);', guild.id)
+
+        # Compare list from discord with list from db and remove missing
+        for id in guild_id_list:
+            if id not in [guild.id for guild in bot.guilds]:
+                async with conn.transaction():
+                    await conn.execute('DELETE FROM guilds WHERE guild_id = $1;', id)
 
     # Synchronize App-Commands with discord
     await bot.tree.sync()
