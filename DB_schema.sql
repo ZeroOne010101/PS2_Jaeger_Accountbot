@@ -23,7 +23,7 @@ SET row_security = off;
 -- Name: PS2JaegerAccountbot; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE "PS2JaegerAccountbot" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
+CREATE DATABASE "PS2JaegerAccountbot";-- WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
 
 
 ALTER DATABASE "PS2JaegerAccountbot" OWNER TO postgres;
@@ -43,7 +43,7 @@ SET row_security = off;
 
 SET default_tablespace = '';
 
-SET default_table_access_method = heap;
+--SET default_table_access_method = heap;
 
 --
 -- TOC entry 209 (class 1259 OID 16437)
