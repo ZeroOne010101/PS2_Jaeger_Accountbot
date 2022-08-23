@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=asorr
-ExecStart=/usr/bin/python3.10 /home/asorr/PS2_Jaeger_Accountbot/src/PS2_Jaeger_Accountbot.py
+ExecStart=/usr/local/bin/python3.10 /home/asorr/PS2_Jaeger_Accountbot/src/PS2_Jaeger_Accountbot.py
 RestartSec=5
 
 [Install]
