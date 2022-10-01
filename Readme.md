@@ -52,6 +52,7 @@ Most commands are available as Slash Commands. Due to Discord limitations the sy
 There are many ways to host a python program. Here i will describe my approach.
 ### Environment
 OS: Debian 11 bullseye (stable at the time of writing)
+
 Python: Version 3.10
 ### Setup
 #### Ensure you are in the home directory
@@ -59,19 +60,23 @@ Python: Version 3.10
 #### Get master
 Since we dont do any real releases, we treat the stable branch as the production branch.
 Not that this may not be the best approach for other repositories.
+
 `git clone "https://github.com/ZeroOne010101/PS2_Jaeger_Accountbot"`
 #### cd to Repository
 `cd PS2_Jaeger_Accountbot`
 #### Install python
 At the time of writing only python 3.9 was available for bullseye. So i followed this guide to install 3.10:
+
 https://tecadmin.net/how-to-install-python-3-10-on-debian-11/
 #### Install dependencies
 All the dependencies of the bot are listed in this txt file.
+
 `pip3.10 -r requirements.txt`
 #### Install postgresql
 `sudo apt install postgresql`
 #### Create sql user and set password
 Change PG_PASS in DB_user.sql to the password your bot should use for sql communications.
+
 `sudo -u postgres psql -U postgres -f DB_user.sql`
 #### Create Database
 `sudo -u postgres psql -U postgres -f DB_schema.sql`
@@ -79,7 +84,9 @@ Change PG_PASS in DB_user.sql to the password your bot should use for sql commun
 populate `data/settings.json` with your credentials
 #### Copy, enable and start service
 `sudo cp ps2jaegeraccountbot.service /etc/systemd/system/ps2jaegeraccountbot.service`
+
 `sudo systemctl enable ps2jaegeraccountbot.service`
+
 `sudo systemctl start ps2jaegeraccountbot.service`
 
 ## Special Thanks
