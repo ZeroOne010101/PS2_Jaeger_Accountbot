@@ -81,7 +81,7 @@ Change PG_PASS in DB_user.sql to the password your bot should use for sql commun
 #### Create Database
 `sudo -u postgres psql -U postgres -f DB_schema.sql`
 #### Change bot settings
-populate `data/settings.json` with your credentials
+Populate `data/settings.json` with your credentials
 #### Copy, enable and start service
 `sudo cp ps2jaegeraccountbot.service /etc/systemd/system/ps2jaegeraccountbot.service`
 
