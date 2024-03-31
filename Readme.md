@@ -1,3 +1,5 @@
+# This Project has been deprecated - i do not recommend further production use
+
 # PS2 Jaeger Accountbot
 <a href="https://discordapp.com/oauth2/authorize?client_id=751830501639323718&scope=bot&permissions=19456"><img src="https://img.shields.io/badge/invite-PS2JaegerAccountBot-677BC4"></a>
 <a href="https://discord.com/invite/yvnRZjJ"><img src="https://img.shields.io/badge/ask-anything-677BC4"></a>
